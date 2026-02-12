@@ -8,6 +8,8 @@ dependencies:
     - altair-all=5.4.*
     - nbformat
     - plotly
+    - pip
+    - matplotlib
     - pip:
         - altair_ally
         - nbconvert
