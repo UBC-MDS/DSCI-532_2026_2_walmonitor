@@ -111,7 +111,7 @@ Your suggested code should follow [PEP 8](https://peps.python.org/pep-0008/) Pyt
 We recommend [Ruff](https://docs.astral.sh/ruff/) for automatic code formatting and 
 linting. Use straightforward variable names and keep functions focused on one single 
 task. Docstrings need to be documented under all functions and class definitions 
-using [NumPy style](https://peps.python.org/pep-0008/#documentation-strings).
+using [NumPy style](https://numpydoc.readthedocs.io/en/latest/format.html).
 
 ## Code of Conduct
 
