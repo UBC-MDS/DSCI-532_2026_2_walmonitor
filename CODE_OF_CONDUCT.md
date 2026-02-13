@@ -64,7 +64,7 @@ Group members will follow these Community Impact Guidelines in determining the c
 
 ## Contact
 
-For any inquiries about this Code of Conduct, please contact the project maintainers using the contact information provided in this repository's README.
+For any inquiries about this Code of Conduct, please contact the project maintainers using the contact information provided in this repository's [README](README.md).
 
 
 ## Attribution
