@@ -107,7 +107,7 @@ Before you submit a pull request, check that it meets these guidelines:
 
 ### Code Style
 
-Your suggested code should follow [PEP 8](https://pep8.org/) Python style guide. 
+Your suggested code should follow [PEP 8](https://peps.python.org/pep-0008/) Python style guide. 
 We recommend [Ruff](https://docs.astral.sh/ruff/) for automatic code formatting and 
 linting. Use straightforward variable names and keep functions focused on one single 
 task. Docstrings need to be documented under all functions and class definitions 
