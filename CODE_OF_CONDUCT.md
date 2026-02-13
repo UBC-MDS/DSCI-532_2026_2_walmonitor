@@ -58,9 +58,9 @@ Group members will follow these Community Impact Guidelines in determining the c
 
 ### 3. Instructor involvement
 
-**Community Impact**: A continuous violation and elevation of previous behaviours against standards set in above guideline.
+**Community Impact**: A continuous violation and elevation of previous behavior against standards set in the above guidelines.
 
-**Consequence**: The other group members will reach out to the instructor and all further consequences will be at the instructors discretion.
+**Consequence**: The other group members will reach out to the instructor, and all further consequences will be at the instructor’s discretion.
 
 ## Contact
 
