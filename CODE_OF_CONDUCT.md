@@ -32,7 +32,7 @@ All group members have the right and responsibility to remove, edit, or reject c
 
 ## Scope
 
-This Code of Conduct applies within all community spaces, and also applies when an individual is officially representing the group in public spaces. Examples of representing our group include sending emails or talking to TA or instructors.
+This Code of Conduct applies within all community spaces, and also applies when an individual is officially representing the group in public spaces. Examples of representing our group include sending emails to or speaking with teaching assistants (TAs) or instructors.
 
 ## Enforcement
 
