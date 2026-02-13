@@ -6,10 +6,10 @@ Walmonitor is ...
 
 ## Project maintainers
 
-[Jacob Cann](https://github.com/Jacob-F-Cann)
-[Mailys Guedon](https://github.com/mailysg8)
-[Yuheng Ouyang](https://github.com/yhouyang02)
-[Li Pu](https://github.com/Coachyyds)
+* [Jacob Cann](https://github.com/Jacob-F-Cann)
+* [Mailys Guedon](https://github.com/mailysg8)
+* [Yuheng Ouyang](https://github.com/yhouyang02)
+* [Li Pu](https://github.com/Coachyyds)
 
 ## Get started
 
@@ -40,5 +40,5 @@ To contribute to this project, please refer to the [contribution guidelines](CON
 
 ## Copyright
 
-Copyright © 2026 Jacob Cann, Mailys Guedon, Yuheng Ouyang, Li Pu.
+Copyright © 2026 Jacob Cann, Mailys Guedon, Yuheng Ouyang, Li Pu.  
 Free software distributed under the MIT License.
