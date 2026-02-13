@@ -40,7 +40,7 @@ a comment, the maintainers are usually happy for any support that they can get.
 
 ### Write Documentation
 
-Out `walmonitor` could always use more documentation, whether as part of the 
+Our `walmonitor` could always use more documentation, whether as part of the 
 official documentation, in docstrings, or even on the web in blog posts, articles, 
 and such. Just [open an issue](https://github.com/UBC-MDS/DSCI-532_2026_2_walmonitor/issues) 
 to let us know what you will be working on so that we can provide you with guidance.
