@@ -55,7 +55,7 @@ Here's how to set up `walmonitor` for local development.
 
 1. Fork the <https://github.com/UBC-MDS/DSCI-532_2026_2_walmonitor> repository on GitHub.
 
-2. Clone your fork locally
+2. Clone your fork locally. Replace `your_name_here` with your GitHub username. 
 
     ```shell
     git clone git@github.com:your_name_here/DSCI-532_2026_2_walmonitor.git
@@ -117,3 +117,4 @@ using [NumPy style](https://numpydoc.readthedocs.io/en/latest/format.html).
 
 Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). 
 By participating in this project, you agree to abide by its terms.
+
