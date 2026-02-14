@@ -38,6 +38,15 @@ You can run this app locally following the instructions below.
 
 To contribute to this project, please refer to the [contribution guidelines](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md).
 
+## LLM usage disclaimer
+
+Large language models (LLMs) were used to assist the development of this project, such as the dashboard design and code review.
+
+| Model | Usage | Last Accessed |
+| --- | --- | --- |
+| [GitHub Copilot](https://github.com/features/copilot) | Pull request review, code fix, style consistency | February 2026 |
+| [GPT-5.2](https://openai.com/index/introducing-gpt-5-2/) | Dashboard sketch generation | February 2026 |
+
 ## Copyright
 
 Copyright © 2026 Jacob Cann, Mailys Guedon, Yuheng Ouyang, Li Pu.  
