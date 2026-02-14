@@ -118,12 +118,12 @@ app_ui = ui.page_fluid(
                 ),
                 col_widths=(7, 5),
             ),
-            # TODO: remove debug section in final version
-            ui.hr(),
-            ui.card(
-                ui.card_header("Debug (current inputs)"),
-                ui.output_text_verbatim("debug_inputs"),
-            ),
+            # # TODO: remove debug section in final version
+            # ui.hr(),
+            # ui.card(
+            #     ui.card_header("Debug (current inputs)"),
+            #     ui.output_text_verbatim("debug_inputs"),
+            # ),
         ),
     ),
 )
@@ -131,16 +131,17 @@ app_ui = ui.page_fluid(
 
 ## Server
 def server(input, output, session):
-    @output
-    @render.text
-    def debug_inputs():
-        return (
-            f"metrics = {list(input.metrics())}\n"
-            f"aggregation = {input.agg()}\n"
-            f"rolling_avg = {input.roll()}\n"
-            f"date_range = {input.date_range()}\n"
-            f"branch = {input.branch()}\n"
-        )
+    # @output
+    # @render.text
+    # def debug_inputs():
+    #     return (
+    #         f"metrics = {list(input.metrics())}\n"
+    #         f"aggregation = {input.agg()}\n"
+    #         f"rolling_avg = {input.roll()}\n"
+    #         f"date_range = {input.date_range()}\n"
+    #         f"branch = {input.branch()}\n"
+    #     )
+    pass
 
 
 app = App(app_ui, server)
