@@ -2,7 +2,7 @@
 
 ## Overview
 
-Walmonitor is a dashboard for visualizing the performance of Walmart stores across different branches and time periods. It provides insights into sales trends, produce line rankings, and other key performance indicators to help stakeholders make informed decisions.
+Walmonitor is a dashboard for visualizing the performance of Walmart stores across different branches and time periods. It provides insights into sales trends, product line rankings, and other key performance indicators to help stakeholders make informed decisions.
 
 ## Project maintainers
 
