@@ -72,7 +72,7 @@ The gross income per branch was plotted on a weekly time scale to eliminate plot
 
 ![Figure 2 - Product Line Comparison Across Branches](../img/quarterly_product_sales.png)
 
-The quarterly aggregated gross income was plotter per product line to reveal differences in sales categories. In order to see any significant difference given the short timeframe of the dataset, the aggregation was performed over the entire dataset and all the Walmart branches. Given more data supplied to the dashboard and timeframe toggles for aggregation, further insights can be drawn from the user. The user can deduce from the plot that the Health and Beauty product lines are under-performing compared to the other product lines which are performing similarly. This difference may help the user identify an opportunity for beneficial changes to the Health and Beauty sections of the stores to increase sales.
+The quarterly aggregated gross income was plotted per product line to reveal differences in sales categories. In order to see any significant difference given the short timeframe of the dataset, the aggregation was performed over the entire dataset and all the Walmart branches. Given more data supplied to the dashboard and timeframe toggles for aggregation, further insights can be drawn from the user. The user can deduce from the plot that the Health and Beauty product lines are under-performing compared to the other product lines which are performing similarly. This difference may help the user identify an opportunity for beneficial changes to the Health and Beauty sections of the stores to increase sales.
 
 ---
 
