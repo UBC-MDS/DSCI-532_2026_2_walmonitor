@@ -2,7 +2,7 @@
 
 ## Overview
 
-Walmonitor is ...
+Walmonitor is a dashboard for visualizing the performance of Walmart stores across different branches and time periods. It provides insights into sales trends, produce line rankings, and other key performance indicators to help stakeholders make informed decisions.
 
 ## Project maintainers
 
@@ -30,9 +30,17 @@ You can run this app locally following the instructions below.
 3. Install the required dependencies (we recommend using `conda`):
 
     ```bash
-    conda create -f environment.yml
+    conda env create -f environment.yml
     conda activate walmonitor
     ```
+
+4. Run the app in reload mode:
+
+    ```bash
+    shiny run --reload src/app.py
+    ```
+
+5. Check the terminal for the local URL (e.g., `http://127.0.0.1:8000`) and open it in your web browser to view the dashboard.
 
 ## Development
 
