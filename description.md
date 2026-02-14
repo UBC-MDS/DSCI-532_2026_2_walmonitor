@@ -1,0 +1,1 @@
+This dashboard uses Walmart data from 3 cities in Myanmar to help high level executives (branch managers, operational managers...) see key insights from their buisness. These insights can be used, among other things, to compare performance between branches or determine factors that affect revenue.
