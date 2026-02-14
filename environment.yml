@@ -1,0 +1,15 @@
+name: 'walmonitor'
+channels:
+    - conda-forge
+    - defaults
+dependencies:
+    - python>=3.11
+    - nb_conda_kernels
+    - altair-all=5.4.*
+    - nbformat
+    - plotly
+    - pip
+    - matplotlib
+    - pip:
+        - altair_ally
+        - nbconvert
