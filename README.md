@@ -38,9 +38,9 @@ You can run this app locally following the instructions below.
 
 To contribute to this project, please refer to the [contribution guidelines](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md).
 
-## LLM usage disclaimer
+## LLM usage disclosure
 
-Large language models (LLMs) were used to assist the development of this project, such as the dashboard design and code review.
+Large language models (LLMs) were used to assist the development of this project. We did our best to ensure that the use of LLMs was ethical and transparent. Below is a table summarizing the LLMs we used, their purposes, and the last time we accessed them.
 
 | Model | Usage | Last Accessed |
 | --- | --- | --- |
