@@ -1,5 +1,11 @@
 from datetime import date
-from shiny import App, ui, render
+from shiny import App, ui, render, reactive
+from shinywidgets import output_widget, render_altair
+import altair as alt
+alt.data_transformers.enable('vegafusion')
+import warnings
+warnings.filterwarnings('ignore', module='altair')
+import pandas as pd
 
 ## Input choices
 METRIC_CHOICES = {
@@ -42,7 +48,7 @@ app_ui = ui.page_fluid(
                 "agg",
                 "Aggregation",
                 choices={"day": "Day", "week": "Week"},
-                selected="day",
+                selected="week",
                 inline=True,
             ),
             # Rolling average: none vs 7 days
@@ -79,12 +85,12 @@ app_ui = ui.page_fluid(
                     ui.div(
                         {
                             "style": (
-                                "height: 260px; display:flex; align-items:center; "
+                                "height: 400px; display:flex; align-items:center; "
                                 "justify-content:center; color:#6b7280; "
                                 "border: 1px dashed #d1d5db; border-radius: 10px;"
                             )
                         },
-                        "Time-series overlay lines",
+                        output_widget("time_series_line"),
                     ),
                 ),
                 col_widths=(12,),
@@ -128,20 +134,82 @@ app_ui = ui.page_fluid(
     ),
 )
 
+# ── data ─────────────────────────────────────────────────────────
+walmart_df = pd.read_csv('data/raw/walmart_sales_data.csv')
+walmart_df['Date'] =  pd.to_datetime(walmart_df['Date'], format='%Y-%m-%d')
 
-## Server
+# ── helpers ─────────────────────────────────────────────────────────
+def line_plot(df,
+              metric,
+              category,
+              ) -> alt.Chart:
+
+    df = df.copy()
+    df['Date'] = pd.to_datetime(df['Date'])
+
+    # Make date the index for resampling by week 
+    df = df.set_index('Date')
+
+    # Create the weekly sales line plot for the cities
+    line = alt.Chart(df).mark_line().encode(
+        x = alt.X('Date:T',
+                axis=alt.Axis(labelAngle=270)),
+        y = alt.Y(metric, title=metric.split(':')[0],
+                axis=alt.Axis(labelExpr="datum.value + 'K'")),
+                color=category
+    ).properties(width = 1420, height = 300,
+                title='Time Series Visualization')
+
+    return line
+
+
+# ── server ──────────────────────────────────────────────────────────
 def server(input, output, session):
-    # @output
-    # @render.text
-    # def debug_inputs():
-    #     return (
-    #         f"metrics = {list(input.metrics())}\n"
-    #         f"aggregation = {input.agg()}\n"
-    #         f"rolling_avg = {input.roll()}\n"
-    #         f"date_range = {input.date_range()}\n"
-    #         f"branch = {input.branch()}\n"
-    #     )
-    pass
 
+    @reactive.calc
+    def resample_sum():
+
+        df = walmart_df.copy()
+
+        metric = 'gross income'
+
+        category = 'City'
+
+        resample_freq = input.agg()
+
+        print(resample_freq)
+
+        if input.agg() == 'week':
+            resample_freq = 'W'
+        else:
+            resample_freq = 'D'
+
+        # Make date the index for resampling by week 
+        df = df.set_index('Date')
+        
+        # Resample metric by summing across the chosen resampling period
+        # Note that if you resample on entire data frame metric per category info is lost
+        df_lst = []
+
+        for col in df[category]:
+            col_df = df[df[category] == col
+                                ].resample(resample_freq)[metric].sum()
+            col_df = col_df.reset_index()
+            col_df[category] = col
+            df_lst.append(col_df)
+
+        # Concatenate the city data frames for sorting by color in line plot
+        concat_df = pd.concat(df_lst)
+
+        return concat_df
+
+    @render_altair
+    def time_series_line():
+
+        resamp_df = resample_sum()
+
+        line = line_plot(resamp_df, 'gross income', 'City')
+
+        return line
 
 app = App(app_ui, server)
