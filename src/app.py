@@ -9,17 +9,17 @@ import pandas as pd
 
 ## Input choices
 METRIC_CHOICES = {
-    "total": "Total Sales",
-    "gross": "Gross Income",
+    "Total": "Total Sales",
+    "gross income": "Gross Income",
     "cogs": "COGS",
-    "margin": "Margin %",
+    "gross margin percentage": "Margin %",
 }
 
 BRANCH_CHOICES = {
     "all": "All Branches / Cities",
-    "A": "Branch A",
-    "B": "Branch B",
-    "C": "Branch C",
+    "Yangon": "Branch A (Yangon)",
+    "Mandalay": "Branch B (Mandalay)",
+    "Naypyitaw": "Branch C (Naypyitaw)",
 }
 
 # Default date range
@@ -41,7 +41,7 @@ app_ui = ui.page_fluid(
                 "metrics",
                 "Metrics",
                 choices=METRIC_CHOICES,
-                selected=["total", "gross"],
+                selected=["Total", "gross income"],
             ),
             # Aggregation: day vs week
             ui.input_radio_buttons(
@@ -139,46 +139,53 @@ walmart_df = pd.read_csv('data/raw/walmart_sales_data.csv')
 walmart_df['Date'] =  pd.to_datetime(walmart_df['Date'], format='%Y-%m-%d')
 
 # ── helpers ─────────────────────────────────────────────────────────
-def line_plot(df,
-              metric,
-              category,
-              ) -> alt.Chart:
-
+def line_plot(df, metrics, category) -> alt.Chart:
     df = df.copy()
-    df['Date'] = pd.to_datetime(df['Date'])
+    
+    df = df.reset_index()
+    
+    lines = []
+    
+    for met in metrics:
+        
+        if met =='gross margin percentage':
+             unit = '%'
+        else:
+            unit = 'K'
 
-    # Make date the index for resampling by week 
-    df = df.set_index('Date')
+        df_met = df[df['metric'] == met]
 
-    # Create the weekly sales line plot for the cities
-    line = alt.Chart(df).mark_line().encode(
-        x = alt.X('Date:T',
-                axis=alt.Axis(labelAngle=270)),
-        y = alt.Y(metric, title=metric.split(':')[0],
-                axis=alt.Axis(labelExpr="datum.value + 'K'")),
-                color=category
-    ).properties(width = 1420, height = 300,
-                title='Time Series Visualization')
+        line = alt.Chart(df_met).mark_line().encode(
+            x=alt.X('Date:T', axis=alt.Axis(labelAngle=270)),
+            y=alt.Y('value:Q', title=met, axis=alt.Axis(labelExpr=f"datum.value + '{unit}'")),
+            stroke=alt.Stroke('metric:N', legend=alt.Legend(title=''))
+        )
+        
+        lines.append(line)
+    
+    comb = alt.layer(*lines).properties(
+        width=1400, height=300,
+        title=f'Time Series Across {category}'
+    )
 
-    return line
-
+    return comb 
 
 # ── server ──────────────────────────────────────────────────────────
 def server(input, output, session):
 
     @reactive.calc
-    def resample_sum():
+    def resample():
 
         df = walmart_df.copy()
 
-        metric = 'gross income'
+        metric = input.metrics()
 
-        category = 'City'
+        city = input.branch()
 
-        resample_freq = input.agg()
+        if not city == 'all':
 
-        print(resample_freq)
-
+            df = df[df['City'] == city]
+            
         if input.agg() == 'week':
             resample_freq = 'W'
         else:
@@ -187,28 +194,39 @@ def server(input, output, session):
         # Make date the index for resampling by week 
         df = df.set_index('Date')
         
-        # Resample metric by summing across the chosen resampling period
+        # Resample metric by summing or averaging across the chosen resampling period
         # Note that if you resample on entire data frame metric per category info is lost
         df_lst = []
 
-        for col in df[category]:
-            col_df = df[df[category] == col
-                                ].resample(resample_freq)[metric].sum()
-            col_df = col_df.reset_index()
-            col_df[category] = col
-            df_lst.append(col_df)
-
-        # Concatenate the city data frames for sorting by color in line plot
+        for met in metric:
+            if met == 'gross margin percentage':
+                # for percentage average instead of summing
+                col_df = df.resample(resample_freq)[met].mean()
+                col_df = col_df.reset_index()
+                col_df['metric'] = met
+                # Put df in long format for time series plot
+                col_df = col_df.rename(columns={met: 'value'})
+                df_lst.append(col_df)
+            else:
+                # sum metrics that are totaled across resample period
+                col_df = df.resample(resample_freq)[met].sum()
+                col_df = col_df.reset_index()
+                col_df['metric'] = met
+                # Put df in long format for time series plot
+                col_df = col_df.rename(columns={met: 'value'})
+                df_lst.append(col_df)
+            
+        # Concatenate the resampled data frames for line plot
         concat_df = pd.concat(df_lst)
 
-        return concat_df
+        return concat_df, metric, city
 
     @render_altair
     def time_series_line():
 
-        resamp_df = resample_sum()
+        resamp_df, metric, city = resample()
 
-        line = line_plot(resamp_df, 'gross income', 'City')
+        line = line_plot(resamp_df, metric, city)
 
         return line
 
