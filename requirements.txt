@@ -1,0 +1,4 @@
+shiny==1.4.0
+pandas==3.0.0
+altair-all==5.4.*
+altair_ally==0.1.1
