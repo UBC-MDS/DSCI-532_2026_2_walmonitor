@@ -122,7 +122,7 @@ app_ui = ui.page_fluid(
                     ui.card_header("Sales Mix Over Time"),
                     ui.layout_columns(
                         ui.panel_conditional(   # Used Claude to suggest which ui.* to use for adding a slider conditional on user input
-                            "input.agg === 'day'", # If the user chooses to aggregate by day, then use a slider to determine what date range to show
+                            "input.input_agg === 'day'", # If the user chooses to aggregate by day, then use a slider to determine what date range to show
                             ui.input_slider(
                                 "range",
                                 "Select a date range:",
@@ -137,17 +137,17 @@ app_ui = ui.page_fluid(
                                   "Suggested range size : 1 month" 
                                   ),
                         ),
-                        ui.input_select( # User decides what comparison they want highlighted on the plot
-                            "comp",
-                            "Compare",
-                            choices={
-                                "Product line": "Product line",
-                                "Payment": "Payment type",
-                                "Gender": "Gender",
-                                "Customer type": "Customer type",
-                            },
-                            selected="product_line",
-                        ),
+                        # ui.input_select( # User decides what comparison they want highlighted on the plot
+                        #     "input_comparison",
+                        #     "Compare",
+                        #     choices={
+                        #         "product_line": "Product line",
+                        #         "Payment": "Payment type",
+                        #         "Gender": "Gender",
+                        #         "Customer type": "Customer type",
+                        #     },
+                        #     selected="product_line",
+                        # ),
                         col_widths=[7, 5]
                     ),
                     output_widget("stack_plot"),
@@ -362,30 +362,25 @@ def server(input, output, session):
     def stack_plot():
         """
         This function uses user input to determine what to compare in the plot (Product line, Customer type, Payment type, Gender) 
-        and what date range to choose from if the values are aggregated by day.
-        
-        TODO : add data from reactive calc 
+        and what date range to choose from if the values are aggregated by day. 
         """
-        walmart_df = pd.read_csv('data/raw/walmart_sales_data.csv')
-        walmart_df['Date']=pd.to_datetime(walmart_df['Date'])
-        input_comparison = input.comp()
+        data = df_filtered_product()
+        #input_comparison = input.input_comparison()
+        input_comparison = 'product_line'
 
         # If user chooses to aggregate by day 
-        if input.agg()=='day':
+        if input.input_agg()=='day':
             start_date = pd.to_datetime(input.range()[0])
             end_date = pd.to_datetime(input.range()[1])
-            prod_sum = walmart_df[walmart_df["Date"].between(start_date, end_date, inclusive='both')].groupby([walmart_df['Date'],walmart_df[input_comparison]]).agg({'Total':'mean'})
+            data = data[data["time"].between(start_date, end_date, inclusive='both')]
         
-        # If user chooses to aggregate by week
-        else:
-            prod_sum = walmart_df.groupby([input_comparison, pd.Grouper(key='Date', freq='W-MON')]).agg({'Total':'mean'})
 
         # Plotting the stack plot
-        chart = alt.Chart(prod_sum.reset_index()).mark_area().encode(
-            y=alt.Y('Total',title='Total sales'),
-            x = 'Date:T',
+        chart = alt.Chart(data).mark_area().encode(
+            y=alt.Y('total',title='Total sales'),
+            x = 'time:T',
             color = input_comparison,
-            tooltip=[input_comparison,'Date','Total']
+            tooltip=[input_comparison,'time','total']
         )
         
         return chart
