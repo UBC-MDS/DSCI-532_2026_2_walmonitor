@@ -191,7 +191,7 @@ def server(input, output, session):
         # Filter columns by metrics
         metrics = list(input.input_metrics() or [])
         if not metrics:
-            return pd.DataFrame(columns=["time"])
+            return pd.DataFrame(columns=["date"])
 
         df = df[["Date"] + metrics].copy()
 
