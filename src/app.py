@@ -80,7 +80,7 @@ app_ui = ui.page_fluid(
                 selected=DEFAULT_AGG,
                 inline=True,
             ),
-            # Rolling average: none vs 7 days
+            # Aggregation method: sum vs mean
             ui.input_radio_buttons(
                 "input_agg_method",
                 "Aggregation method",
