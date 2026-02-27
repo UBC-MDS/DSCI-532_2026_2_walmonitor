@@ -95,6 +95,20 @@ app_ui = ui.page_fluid(
             ui.layout_columns(
                 ui.card(
                     ui.card_header("Sales Mix Over Time"),
+                    ui.panel_conditional(   # Used Claude to suggest which ui.* to use for adding a slider conditional on user input
+                        "input.agg === 'day'",
+                        ui.input_slider(
+                            "range",
+                            "Select a date range",
+                            min = pd.to_datetime('2019-01-01'),
+                            max = pd.to_datetime('2019-03-31'),
+                            value = [pd.to_datetime('2019-01-01'),pd.to_datetime('2019-01-31')],
+                            ticks = True,
+                            step = 1,
+                            time_format="%Y-%m-%d"
+                        ),
+                        ui.help_text("Suggested range size : 1 month"),
+                    ),
                     output_widget("stack_plot"),
                     full_screen = True
                 ),
@@ -139,7 +153,16 @@ def server(input, output, session):
     @render_altair
     def stack_plot():
         walmart_df = pd.read_csv('data/raw/walmart_sales_data.csv')
-        prod_sum = walmart_df.groupby([walmart_df['Date'],walmart_df['Product line']]).agg({'Total':'mean'})
+        walmart_df['Date']=pd.to_datetime(walmart_df['Date'])
+
+        # If user chooses to aggregate by day 
+        if input.agg()=='day':
+            start_date = pd.to_datetime(input.range()[0])
+            end_date = pd.to_datetime(input.range()[1])
+            prod_sum = walmart_df[walmart_df["Date"].between(start_date, end_date, inclusive='both')].groupby([walmart_df['Date'],walmart_df['Product line']]).agg({'Total':'mean'})
+        else: # If user chooses to aggregate by week
+            prod_sum = walmart_df.groupby(['Product line', pd.Grouper(key='Date', freq='W-MON')]).agg({'Total':'mean'})
+        
         chart = alt.Chart(prod_sum.reset_index()).mark_area().encode(
             y=alt.Y('Total',title='Total sales'),
             x = 'Date:T',
