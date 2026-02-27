@@ -4,8 +4,8 @@
 
 ## Component Inventory
 
-| ID | Type | Shiny widget / renderer |Depends on | Job story |
-|---|---|---|---|---|
+| ID | Type | Shiny widget / renderer | Depends on | User story |
+| --- | --- | --- | --- | --- |
 | `input_metrics` | Input | `ui.input_checkbox_group()` | -- | #1, #3 |
 | `input_agg` | Input | `ui.input_radio_buttons()` | -- | #1 |
 | `input_agg_method` | Input | `ui.input_radio_buttons()` | -- | #2 |
