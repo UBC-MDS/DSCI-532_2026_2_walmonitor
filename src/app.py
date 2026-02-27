@@ -1,5 +1,8 @@
 from datetime import date
 from shiny import App, ui, render
+import pandas as pd
+import altair as alt
+from shinywidgets import render_altair, output_widget 
 
 ## Input choices
 METRIC_CHOICES = {
@@ -92,16 +95,8 @@ app_ui = ui.page_fluid(
             ui.layout_columns(
                 ui.card(
                     ui.card_header("Sales Mix Over Time"),
-                    ui.div(
-                        {
-                            "style": (
-                                "height: 300px; display:flex; align-items:center; "
-                                "justify-content:center; color:#6b7280; "
-                                "border: 1px dashed #d1d5db; border-radius: 10px;"
-                            )
-                        },
-                        "Stacked filled area chart",
-                    ),
+                    output_widget("stack_plot"),
+                    full_screen = True
                 ),
                 ui.card(
                     ui.card_header("Ranked Product Lines"),
@@ -141,7 +136,16 @@ def server(input, output, session):
     #         f"date_range = {input.date_range()}\n"
     #         f"branch = {input.branch()}\n"
     #     )
-    pass
-
+    @render_altair
+    def stack_plot():
+        walmart_df = pd.read_csv('data/raw/walmart_sales_data.csv')
+        prod_sum = walmart_df.groupby([walmart_df['Date'],walmart_df['Product line']]).agg({'Total':'mean'})
+        chart = alt.Chart(prod_sum.reset_index()).mark_area().encode(
+            y=alt.Y('Total',title='Total sales'),
+            x = 'Date:T',
+            color = 'Product line',
+            tooltip=['Product line','Date','Total']
+        )
+        return chart
 
 app = App(app_ui, server)
