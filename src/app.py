@@ -180,8 +180,8 @@ def server(input, output, session):
         # Filter rows by date range
         start, end = input.input_date_range()
         start_ts = pd.Timestamp(start)
-        end_ts = pd.Timestamp(end) + pd.Timedelta(days=1) - pd.Timedelta(microseconds=1)
-        df = df[(df["Date"] >= start_ts) & (df["Date"] <= end_ts)]
+        end_ts = pd.Timestamp(end) + pd.Timedelta(days=1)
+        df = df[(df["Date"] >= start_ts) & (df["Date"] < end_ts)]
 
         # Filter rows by branch
         branch = input.input_branch()
