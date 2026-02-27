@@ -20,7 +20,7 @@
 ## Reactivity Diagram
 
 ```mermaid
-flowchart TD
+flowchart LR
   A[/input_metrics/] --> F{{df_filtered}}
   B[/input_agg/] --> F
   C[/input_agg_method/] --> F
