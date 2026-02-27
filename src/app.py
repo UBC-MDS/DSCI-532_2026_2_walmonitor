@@ -40,16 +40,16 @@ DATA_PATH = (
 )
 DATA_RAW = pd.read_csv(DATA_PATH)
 DATA_RAW["Date"] = pd.to_datetime(DATA_RAW["Date"])
-
-# Crop unused columns for this view (hard-coded)
 BASE_COLS = ["Date", "Branch"] + list(METRIC_CHOICES.keys())
-DATA_BASE = DATA_RAW[BASE_COLS].copy()
+DATA_BASE = DATA_RAW[BASE_COLS].copy()  # Crop unused columns
 
 
+## Helper functions
 def to_snake_case(name: str) -> str:
+    """Convert a string to snake_case, suitable for column names."""
     s = str(name).strip().lower()
     s = s.replace("%", "pct")
-    s = re.sub(r"[^\w\s]", " ", s) 
+    s = re.sub(r"[^\w\s]", " ", s)
     s = re.sub(r"\s+", "_", s)
     s = re.sub(r"_+", "_", s).strip("_")
     return s
@@ -175,6 +175,10 @@ app_ui = ui.page_fluid(
 def server(input, output, session):
     @reactive.calc
     def df_filtered() -> pd.DataFrame:
+        """
+        Apply filters and aggregations to the base data,
+        returning the processed DataFrame.
+        """
         df = DATA_BASE.copy()
 
         # Filter rows by date range
@@ -213,12 +217,14 @@ def server(input, output, session):
     @output
     @render.data_frame
     def tbl_filtered():
+        """For debug only: Display the filtered DataFrame"""
         return render.DataGrid(df_filtered(), height="280px")
 
     # TODO: to be commented out before release
     @output
     @render.text
     def debug_inputs():
+        """For debug only: Display the current input values"""
         return (
             f"metrics = {list(input.input_metrics() or [])}\n"
             f"aggregation = {input.input_agg()}\n"
