@@ -1,5 +1,6 @@
 from datetime import date
 from shiny import App, ui, render
+import matplotlib.pyplot as plt
 
 ## Input choices
 METRIC_CHOICES = {
@@ -127,8 +128,47 @@ app_ui = ui.page_fluid(
         ),
     ),
 )
+def product_lines_plot(df, top_n=6):
+    df = df.copy()
 
+    PRODUCT_COL = "Product line"
+    SALES_COL = "Total"
+    GROSS_INCOME_COL = "gross income"
 
+    sales = (
+        df.groupby(PRODUCT_COL, dropna=False)[SALES_COL]
+          .sum()
+          .sort_values(ascending=False)
+    )
+
+    top_sales = sales.head(top_n)
+    if len(sales) > top_n:
+        top_sales = pd.concat([top_sales, pd.Series({"Other": sales.iloc[top_n:].sum()})])
+
+    income_all = df.groupby(PRODUCT_COL, dropna=False)[GROSS_INCOME_COL].sum()
+    top_income = income_all.reindex(top_sales.index.drop("Other", errors="ignore"))
+
+    if "Other" in top_sales.index:
+        keep_keys = top_sales.index.drop("Other", errors="ignore")
+        other_income = income_all.drop(keep_keys, errors="ignore").sum()
+        top_income = pd.concat([top_income, pd.Series({"Other": other_income})])
+
+    labels = list(top_sales.index)[::-1]
+    sales_vals = top_sales.values[::-1]
+    income_vals = top_income.reindex(top_sales.index).values[::-1]
+
+    fig, ax = plt.subplots()
+    ax.barh(labels, sales_vals)
+    ax.set_title("Product Lines — Ranked")
+    ax.set_xlabel("Sales")
+    ax.set_ylabel("")
+
+    ax2 = ax.twiny()
+    ax2.scatter(income_vals, labels)
+    ax2.set_xlabel("Gross income")
+
+    fig.tight_layout()
+    return fig
 ## Server
 def server(input, output, session):
     # @output
@@ -141,6 +181,9 @@ def server(input, output, session):
     #         f"date_range = {input.date_range()}\n"
     #         f"branch = {input.branch()}\n"
     #     )
+    @render.plot
+    def plot_product_lines():
+        return product_lines_plot(df_filtered(), top_n=6)
     pass
 
 
