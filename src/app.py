@@ -67,14 +67,14 @@ app_ui = ui.page_fluid(
             ui.h4("Controls"),
             # Metrics checkboxes
             ui.input_checkbox_group(
-                "metrics",
+                "input_metrics",
                 "Metrics",
                 choices=METRIC_CHOICES,
                 selected=DEFAULT_METRICS,
             ),
             # Aggregation: day vs week
             ui.input_radio_buttons(
-                "agg",
+                "input_agg",
                 "Aggregation",
                 choices=AGG_CHOICES,
                 selected=DEFAULT_AGG,
@@ -82,7 +82,7 @@ app_ui = ui.page_fluid(
             ),
             # Rolling average: none vs 7 days
             ui.input_radio_buttons(
-                "method",
+                "input_agg_method",
                 "Aggregation method",
                 choices=METHOD_CHOICES,
                 selected=DEFAULT_METHOD,
@@ -90,7 +90,7 @@ app_ui = ui.page_fluid(
             ),
             # Date range
             ui.input_date_range(
-                "date_range",
+                "input_date_range",
                 "Date range",
                 start=DEFAULT_START,
                 end=DEFAULT_END,
@@ -99,7 +99,7 @@ app_ui = ui.page_fluid(
             ),
             # Branch dropdown
             ui.input_select(
-                "branch",
+                "input_branch",
                 "Branch",
                 choices=BRANCH_CHOICES,
                 selected=DEFAULT_BRANCH,
@@ -178,32 +178,32 @@ def server(input, output, session):
         df = DATA_BASE.copy()
 
         # Filter rows by date range
-        start, end = input.date_range()
+        start, end = input.input_date_range()
         start_ts = pd.Timestamp(start)
         end_ts = pd.Timestamp(end) + pd.Timedelta(days=1) - pd.Timedelta(microseconds=1)
         df = df[(df["Date"] >= start_ts) & (df["Date"] <= end_ts)]
 
         # Filter rows by branch
-        branch = input.branch()
+        branch = input.input_branch()
         if branch != "all":
             df = df[df["Branch"] == branch]
 
         # Filter columns by metrics
-        metrics = list(input.metrics() or [])
+        metrics = list(input.input_metrics() or [])
         if not metrics:
             return pd.DataFrame(columns=["time"])
 
         df = df[["Date"] + metrics].copy()
 
         # Aggregate by day/week and sum/mean
-        if input.agg() == "day":
+        if input.input_agg() == "day":
             df["date"] = df["Date"].dt.floor("D")
         else:
             df["date"] = (
                 df["Date"].dt.to_period("W-SAT").dt.start_time
             )  # Week starting Sunday
 
-        out = df.groupby("date", as_index=False)[metrics].agg(input.method())
+        out = df.groupby("date", as_index=False)[metrics].agg(input.input_agg_method())
         out = out.sort_values("date").reset_index(drop=True)
         out = out.rename(columns={c: to_snake_case(c) for c in out.columns})
 
@@ -220,11 +220,11 @@ def server(input, output, session):
     @render.text
     def debug_inputs():
         return (
-            f"metrics = {list(input.metrics() or [])}\n"
-            f"aggregation = {input.agg()}\n"
-            f"method = {input.method()}\n"
-            f"date_range = {input.date_range()}\n"
-            f"branch = {input.branch()}\n"
+            f"metrics = {list(input.input_metrics() or [])}\n"
+            f"aggregation = {input.input_agg()}\n"
+            f"method = {input.input_agg_method()}\n"
+            f"date_range = {input.input_date_range()}\n"
+            f"branch = {input.input_branch()}\n"
             f"number of filtered rows = {len(df_filtered())}\n"
         )
 
