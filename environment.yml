@@ -5,6 +5,7 @@ dependencies:
   - python>=3.11
   - pandas=3.0.0
   - shiny=1.4.0
+  - matplotlib=3.10.8
   - altair-all=5.5.0
   - nb_conda_kernels=2.5.1 
   - pip=26.0.1
