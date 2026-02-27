@@ -98,7 +98,7 @@ app_ui = ui.page_fluid(
                     ui.card_header("Sales Mix Over Time"),
                     ui.layout_columns(
                         ui.panel_conditional(   # Used Claude to suggest which ui.* to use for adding a slider conditional on user input
-                            "input.agg === 'day'",
+                            "input.agg === 'day'", # If the user chooses to aggregate by day, then use a slider to determine what date range to show
                             ui.input_slider(
                                 "range",
                                 "Select a date range:",
@@ -110,10 +110,10 @@ app_ui = ui.page_fluid(
                                 time_format="%Y-%m-%d"
                             ),
                               ui.help_text(
-                                  "Suggested range size : 1 month"
+                                  "Suggested range size : 1 month" 
                                   ),
                         ),
-                        ui.input_select(
+                        ui.input_select( # User decides what comparison they want highlighted on the plot
                             "comp",
                             "Compare",
                             choices={
@@ -169,6 +169,12 @@ def server(input, output, session):
     #     )
     @render_altair
     def stack_plot():
+        """
+        This function uses user input to determine what to compare in the plot (Product line, Customer type, Payment type, Gender) 
+        and what date range to choose from if the values are aggregated by day.
+        
+        TODO : add data from reactive calc 
+        """
         walmart_df = pd.read_csv('data/raw/walmart_sales_data.csv')
         walmart_df['Date']=pd.to_datetime(walmart_df['Date'])
         input_comparison = input.comp()
@@ -182,6 +188,8 @@ def server(input, output, session):
         # If user chooses to aggregate by week
         else:
             prod_sum = walmart_df.groupby([input_comparison, pd.Grouper(key='Date', freq='W-MON')]).agg({'Total':'mean'})
+
+        # Plotting the stack plot
         chart = alt.Chart(prod_sum.reset_index()).mark_area().encode(
             y=alt.Y('Total',title='Total sales'),
             x = 'Date:T',
