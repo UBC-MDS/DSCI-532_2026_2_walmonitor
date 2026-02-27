@@ -279,7 +279,7 @@ def server(input, output, session):
     @reactive.calc
     def resample():
 
-        df = walmart_df.copy()
+        df = df_filtered()
 
         metric = input.metrics()
 
