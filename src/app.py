@@ -31,10 +31,11 @@ DEFAULT_METHOD = "sum"
 
 BRANCH_CHOICES = {
     "all": "All Branches / Cities",
-    "Yangon": "Branch A (Yangon)",
-    "Mandalay": "Branch B (Mandalay)",
-    "Naypyitaw": "Branch C (Naypyitaw)",
+    "A": "Branch A",
+    "B": "Branch B",
+    "C": "Branch C",
 }
+
 DEFAULT_BRANCH = "all"
 
 DEFAULT_START = date(2019, 1, 1)
@@ -177,38 +178,52 @@ app_ui = ui.page_fluid(
     ),
 )
 
-# ── data ─────────────────────────────────────────────────────────
-walmart_df = pd.read_csv('data/raw/walmart_sales_data.csv')
-walmart_df['Date'] =  pd.to_datetime(walmart_df['Date'], format='%Y-%m-%d')
-
 # ── helpers ─────────────────────────────────────────────────────────
 def line_plot(df, metrics, category) -> alt.Chart:
     df = df.copy()
     
     df = df.reset_index()
     
+    print(df)
+
     lines = []
+
+    branch_map = {'A': 'Yangon', 'B': 'Mandalay', 'C': 'Naypyitaw'}
+
+    if category in branch_map.keys():
+        category = branch_map[category]
     
     for met in metrics:
-        
-        if met =='gross margin percentage':
+        met = to_snake_case(met)
+        print(met)
+        if met =='gross_margin_percentage':
              unit = '%'
         else:
             unit = 'K'
 
         df_met = df[df['metric'] == met]
+        print(df_met)
 
         line = alt.Chart(df_met).mark_line().encode(
-            x=alt.X('Date:T', axis=alt.Axis(labelAngle=270)),
+            x=alt.X('date:T', axis=alt.Axis(labelAngle=270)),
             y=alt.Y('value:Q', title=met, axis=alt.Axis(labelExpr=f"datum.value + '{unit}'")),
-            stroke=alt.Stroke('metric:N', legend=alt.Legend(title=''))
+            color=alt.Color('metric:N', legend=alt.Legend(title=''))
         )
         
         lines.append(line)
     
+    print(category)
+    print(met)
+
+    if category == 'all':
+        title = f'Time Series Across {category.title()} Cities'
+    else:
+        title = f'Time Series for the City of {category.title()}'
+    
+
     comb = alt.layer(*lines).properties(
         width=1400, height=300,
-        title=f'Time Series Across {category}'
+        title=title
     )
 
     return comb 
@@ -281,28 +296,39 @@ def server(input, output, session):
 
         df = df_filtered()
 
-        metric = input.metrics()
+        print('DATA FRAME FILTERED AGAIN')
+        print(df)
+        df['date'] =  pd.to_datetime(df['date'], format='%Y-%m-%d')
+        # print(df)
 
-        city = input.branch()
+        metric = input.input_metrics()
+        print(metric)
 
-        if not city == 'all':
+        city = input.input_branch()
+        print(city)
 
-            df = df[df['City'] == city]
+        # if not city == 'all':
+
+        #     df = df[df['city'] == city]
             
-        if input.agg() == 'week':
+        if input.input_agg() == 'week':
             resample_freq = 'W'
         else:
             resample_freq = 'D'
 
+        print(df)
         # Make date the index for resampling by week 
-        df = df.set_index('Date')
+        df = df.set_index('date')
+        print(df)
         
         # Resample metric by summing or averaging across the chosen resampling period
         # Note that if you resample on entire data frame metric per category info is lost
         df_lst = []
 
         for met in metric:
-            if met == 'gross margin percentage':
+            met = to_snake_case(met)
+            print(met)
+            if met == 'gross_margin_percentage':
                 # for percentage average instead of summing
                 col_df = df.resample(resample_freq)[met].mean()
                 col_df = col_df.reset_index()
@@ -324,10 +350,13 @@ def server(input, output, session):
 
         return concat_df, metric, city
 
+    @output
     @render_altair
     def time_series_line():
 
         resamp_df, metric, city = resample()
+
+        print(metric, city)
 
         line = line_plot(resamp_df, metric, city)
 
