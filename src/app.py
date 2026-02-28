@@ -188,24 +188,21 @@ app_ui = ui.page_fluid(
             ui.layout_columns(
                 ui.card(
                     ui.card_header("Sales Mix Over Time"),
-                    ui.layout_columns(
-                        ui.panel_conditional(   # Used Claude.ai to suggest which ui.* to use for adding a slider conditional on user input
-                            "input.input_agg === 'day'", # If the user chooses to aggregate by day, then use a slider to determine what date range to show
-                            ui.input_slider(
-                                "input_slider_range",
-                                "Select a date range:",
-                                min = pd.to_datetime('2019-01-01'),
-                                max = pd.to_datetime('2019-03-31'),
-                                value = [pd.to_datetime('2019-02-01'),pd.to_datetime('2019-02-28')],
-                                ticks = True,
-                                step = 1,
-                                time_format="%Y-%m-%d"
-                            ),
-                              ui.help_text(
-                                  "Suggested range size : 1 month" 
-                                  ),
+                    ui.panel_conditional(   # Used Claude.ai to suggest which ui.* to use for adding a slider conditional on user input
+                        "input.input_agg === 'day'", # If the user chooses to aggregate by day, then use a slider to determine what date range to show
+                        ui.input_slider(
+                            "input_slider_range",
+                            "Select a date range:",
+                            min = pd.to_datetime('2019-01-01'),
+                            max = pd.to_datetime('2019-03-31'),
+                            value = [pd.to_datetime('2019-02-01'),pd.to_datetime('2019-02-28')],
+                            ticks = True,
+                            step = 1,
+                            time_format="%Y-%m-%d"
                         ),
-                        col_widths=[7, 5]
+                            ui.help_text(
+                                "For the best results, use the slider to select a smaller date range to view (we suggest one month)." 
+                                ),
                     ),
                     output_widget("plot_sales_mix"),
                     full_screen=True
