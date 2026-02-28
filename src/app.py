@@ -184,8 +184,6 @@ def line_plot(df, metrics, category) -> alt.Chart:
     
     df = df.reset_index()
     
-    print(df)
-
     lines = []
 
     branch_map = {'A': 'Yangon', 'B': 'Mandalay', 'C': 'Naypyitaw'}
@@ -196,19 +194,14 @@ def line_plot(df, metrics, category) -> alt.Chart:
     for met in metrics:
         met_sc = to_snake_case(met)
     
-        print(met_sc)
-        print(met)
         if met_sc =='gross_margin_percentage':
              unit = '%'
         else:
             unit = 'K'
 
         df_met = df[df['metric'] == met_sc]
-        print(df_met)
 
         df_met['metric'] = met.title()
-
-        print(df_met)
 
         line = alt.Chart(df_met).mark_line().encode(
             x=alt.X('date:T', axis=alt.Axis(labelAngle=270)),
@@ -218,14 +211,10 @@ def line_plot(df, metrics, category) -> alt.Chart:
         
         lines.append(line)
     
-    print(category)
-    print(met)
-
     if category == 'all':
         title = f'Time Series Across {category.title()} Cities'
     else:
         title = f'Time Series for the City of {category.title()}'
-    
 
     comb = alt.layer(*lines).properties(
         width=1400, height=300,
@@ -302,30 +291,19 @@ def server(input, output, session):
 
         df = df_filtered()
 
-        print('DATA FRAME FILTERED AGAIN')
-        print(df)
         df['date'] =  pd.to_datetime(df['date'], format='%Y-%m-%d')
-        # print(df)
 
         metric = input.input_metrics()
-        print(metric)
 
         city = input.input_branch()
-        print(city)
-
-        # if not city == 'all':
-
-        #     df = df[df['city'] == city]
             
         if input.input_agg() == 'week':
             resample_freq = 'W'
         else:
             resample_freq = 'D'
 
-        print(df)
         # Make date the index for resampling by week 
         df = df.set_index('date')
-        print(df)
         
         # Resample metric by summing or averaging across the chosen resampling period
         # Note that if you resample on entire data frame metric per category info is lost
@@ -333,7 +311,6 @@ def server(input, output, session):
 
         for met in metric:
             met = to_snake_case(met)
-            print(met)
             if met == 'gross_margin_percentage':
                 # for percentage average instead of summing
                 col_df = df.resample(resample_freq)[met].mean()
@@ -361,8 +338,6 @@ def server(input, output, session):
     def time_series_line():
 
         resamp_df, metric, city = resample()
-
-        print(metric, city)
 
         line = line_plot(resamp_df, metric, city)
 
