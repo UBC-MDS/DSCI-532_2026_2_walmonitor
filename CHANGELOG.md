@@ -24,7 +24,7 @@
 ### Reflection
 
 * All three user stories were refined and implemented in the app. We aimed to provide a user interface that was intuitive and user-friendly, allowing users to easily navigate through the different sections of the dashboard. However, due to the the layout of different types of plots (e.g. tall vs. wide), we had to make some compromises in the design of the dashboard. For instance, we had to place the stacked area plot and the ranked bar plot on the same row to allow the top space reserved for the most informative line plot. This resulted in a less than ideal layout for the ranked bar plot, which is too tall and not as wide as it could be.
-* The overall layout remain the same as the initial sketch with some minor UI improvement to better fulfill the refined user stories.
+* The overall layout remains the same as the initial sketch with some minor UI improvements to better fulfill the refined user stories.
   * Add a comparison input to the left control bar to allow different comparison options for the stacked area plot and the ranked bar plot.
   * Remove the date range slider from the line plot to allow an overall view of trends.
   * Add a date range slider to the stacked area plot to allow better-looking charts.
