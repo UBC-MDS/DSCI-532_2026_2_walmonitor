@@ -1,5 +1,6 @@
 shiny==1.4.0
 shinywidgets==0.7.1
 pandas==3.0.0
+matplotlib==3.10.8
 altair==5.5.0
 altair_ally==0.1.1
