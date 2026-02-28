@@ -8,11 +8,8 @@ import altair as alt
 alt.data_transformers.enable('vegafusion')
 import warnings
 warnings.filterwarnings('ignore', module='altair')
-import pandas as pd
 from pathlib import Path
-
-from shiny import App, ui, render, reactive
-
+from shiny import req
 
 ## Input choices and defaults
 METRIC_CHOICES = {
@@ -51,7 +48,6 @@ DATA_RAW = pd.read_csv(DATA_PATH)
 DATA_RAW["Date"] = pd.to_datetime(DATA_RAW["Date"])
 BASE_COLS = ["Date", "Branch", "Product line"] + list(METRIC_CHOICES.keys())
 DATA_BASE = DATA_RAW[BASE_COLS].copy()  # Crop unused columns
-
 
 ## Helper functions
 def to_snake_case(name: str) -> str:
@@ -124,6 +120,8 @@ app_ui = ui.page_fluid(
                 choices=METRIC_CHOICES,
                 selected=DEFAULT_METRICS,
             ),
+            ui.output_ui("metrics_warning"),
+
             # Aggregation: day vs week
             ui.input_radio_buttons(
                 "input_agg",
@@ -156,6 +154,17 @@ app_ui = ui.page_fluid(
                 choices=BRANCH_CHOICES,
                 selected=DEFAULT_BRANCH,
             ),
+            ui.input_select( # User decides what comparison they want highlighted on the plot
+                            "input_comparison",
+                            "Compare Sales by:",
+                            choices={
+                                "Product line": "Product line",
+                                "Payment": "Payment type",
+                                "Gender": "Gender",
+                                "Customer type": "Customer type",
+                            },
+                            selected="Product line",
+                        ),
             width=320,
         ),
         # View panel on the right
@@ -171,7 +180,7 @@ app_ui = ui.page_fluid(
                                 "border: 1px dashed #d1d5db; border-radius: 10px;"
                             )
                         },
-                        output_widget("time_series_line"),
+                        output_widget("plot_sales_trend"),
                     ),
                 ),
                 col_widths=(12,),
@@ -179,50 +188,59 @@ app_ui = ui.page_fluid(
             ui.layout_columns(
                 ui.card(
                     ui.card_header("Sales Mix Over Time"),
-                    ui.div(
-                        {
-                            "style": (
-                                "height: 300px; display:flex; align-items:center; "
-                                "justify-content:center; color:#6b7280; "
-                                "border: 1px dashed #d1d5db; border-radius: 10px;"
-                            )
-                        },
-                        "Stacked filled area chart",
+                    ui.panel_conditional(   # Used Claude.ai to suggest which ui.* to use for adding a slider conditional on user input
+                        "input.input_agg === 'day'", # If the user chooses to aggregate by day, then use a slider to determine what date range to show
+                        ui.input_slider(
+                            "input_slider_range",
+                            "Select a date range:",
+                            min = pd.to_datetime('2019-01-01'),
+                            max = pd.to_datetime('2019-03-31'),
+                            value = [pd.to_datetime('2019-02-01'),pd.to_datetime('2019-02-28')],
+                            ticks = True,
+                            step = 1,
+                            time_format="%Y-%m-%d"
+                        ),
+                            ui.help_text(
+                                "For the best results, use the slider to select a smaller date range to view (we suggest one month)." 
+                                ),
                     ),
+                    output_widget("plot_sales_mix"),
+                    full_screen=True
                 ),
                 ui.card(
-                    ui.card_header("Ranked Product Lines by Sales"),
+                    ui.card_header("Ranked Sales"),
                     ui.output_plot("plot_product_lines", height="300px"),
+                    full_screen=True
                 ),
-                col_widths=(7, 5),
+                col_widths=(6, 6),
             ),
             # TODO: to be commented out before release
-            ui.hr(),
-            ui.layout_columns(
-                ui.card(
-                    ui.card_header("df_filtered (debug)"),
-                    ui.output_data_frame("tbl_filtered"),
-                ),
-                ui.card(
-                    ui.card_header("df_filtered_product (debug)"),
-                    ui.output_data_frame("tbl_filtered_product"),
-                ),
-                col_widths=(7, 5),
-            ),
-            ui.layout_columns(
-                ui.card(
-                    ui.card_header("Inputs (debug)"),
-                    ui.output_text_verbatim("debug_inputs"),
-                ),
-                col_widths=(12,),
-            ),
+            # ui.hr(),
+            # ui.layout_columns(
+            #     ui.card(
+            #         ui.card_header("df_filtered (debug)"),
+            #         ui.output_data_frame("tbl_filtered"),
+            #     ),
+            #     ui.card(
+            #         ui.card_header("df_filtered_product (debug)"),
+            #         ui.output_data_frame("tbl_filtered_product"),
+            #     ),
+            #     col_widths=(7, 5),
+            # ),
+            # ui.layout_columns(
+            #     ui.card(
+            #         ui.card_header("Inputs (debug)"),
+            #         ui.output_text_verbatim("debug_inputs"),
+            #     ),
+            #     col_widths=(12,),
+            # ),
         ),
     ),
 ) 
 
-def product_lines_plot(df, top_n=6, method="sum"):
+def product_lines_plot(df, top_n=6, method="sum", comparison="product_line"):
     rank = (
-        df.groupby("product_line", dropna=False)["total"]
+        df.groupby(comparison, dropna=False)["total"]
         .agg("sum" if method == "sum" else "mean")
         .sort_values(ascending=False)
     )
@@ -236,7 +254,7 @@ def product_lines_plot(df, top_n=6, method="sum"):
 
     palette = list(plt.get_cmap("tab10").colors)
     # consistent mapping by alphabetical order (stable across filters)
-    base_lines = sorted([x for x in df["product_line"].dropna().unique() if x != "Other"])
+    base_lines = sorted([x for x in df[comparison].dropna().unique() if x != "Other"])
     color_map = {name: palette[i % len(palette)] for i, name in enumerate(base_lines)}
     color_map["Other"] = (0.7, 0.7, 0.7)  # neutral gray for "Other"
 
@@ -273,6 +291,7 @@ def product_lines_plot(df, top_n=6, method="sum"):
 
 ## Server
 def server(input, output, session):
+    
     ## Reactive calcs
     @reactive.calc
     def df_filtered() -> pd.DataFrame:
@@ -316,7 +335,7 @@ def server(input, output, session):
 
     @reactive.calc
     def df_filtered_product() -> pd.DataFrame:
-        df = DATA_BASE
+        df = DATA_RAW
 
         start, end = input.input_date_range()
         start_ts = pd.Timestamp(start)
@@ -327,10 +346,10 @@ def server(input, output, session):
         if branch != "all":
             mask &= df["Branch"] == branch
 
-        PRODUCT_COL = "Product line"
+        COMP_COL = input.input_comparison()
         SALES_COL = "Total"
 
-        df = df.loc[mask, ["Date", PRODUCT_COL, SALES_COL]].copy()
+        df = df.loc[mask, ["Date", COMP_COL, SALES_COL]].copy()
 
         if input.input_agg() == "day":
             df["time"] = df["Date"].dt.floor("D")
@@ -338,51 +357,16 @@ def server(input, output, session):
             df["time"] = df["Date"].dt.to_period("W-SAT").dt.start_time
 
         out = (
-            df.groupby(["time", PRODUCT_COL], as_index=False)[SALES_COL]
+            df.groupby(["time", COMP_COL], as_index=False)[SALES_COL]
             .agg(input.input_agg_method())
-            .sort_values(["time", PRODUCT_COL])
+            .sort_values(["time", COMP_COL])
             .reset_index(drop=True)
         )
 
         out = out.rename(columns={c: to_snake_case(c) for c in out.columns})
 
         return out
-
-    ## Outputs
-    @output
-    @render.plot
-    def plot_product_lines():
-        """Render the ranked product lines plot based on the filtered data."""
-        return product_lines_plot(
-            df_filtered_product(), method=input.input_agg_method()
-        )
-
-    ## Debug outputs (to be removed before release)
-    @output
-    @render.data_frame
-    def tbl_filtered():
-        """For debug only: Display the filtered DataFrame"""
-        return render.DataGrid(df_filtered(), height="280px")
-
-    @output
-    @render.data_frame
-    def tbl_filtered_product():
-        """For debug only: Display the filtered DataFrame"""
-        return render.DataGrid(df_filtered_product(), height="280px")
-
-    @output
-    @render.text
-    def debug_inputs():
-        """For debug only: Display the current input values"""
-        return (
-            f"metrics = {list(input.input_metrics() or [])}\n"
-            f"aggregation = {input.input_agg()}\n"
-            f"method = {input.input_agg_method()}\n"
-            f"date_range = {input.input_date_range()}\n"
-            f"branch = {input.input_branch()}\n"
-            f"number of filtered rows = {len(df_filtered())}\n"
-        )
-
+    
     @reactive.calc
     def resample():
 
@@ -430,14 +414,106 @@ def server(input, output, session):
 
         return concat_df, metric, city
 
-    @output
+    ## Outputs
+    @render.plot
+    def plot_product_lines():
+        """Render the ranked product lines plot based on the filtered data."""
+        return product_lines_plot(
+            df_filtered_product(), method=input.input_agg_method(), comparison=to_snake_case(input.input_comparison())
+        )
+    
     @render_altair
-    def time_series_line():
+    def plot_sales_mix():
+        """
+        This function uses user input to determine what to compare in the plot (Product line, Customer type, Payment type, Gender) 
+        and what date range to choose from if the values are aggregated by day. 
+        """
+        # Tab10 Hex Colors to match matplotlib tab10
+        tab10_hex = [
+            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+            '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
+        ]
+
+        data = df_filtered_product()
+        input_comparison = to_snake_case(input.input_comparison())
+
+        # If user chooses to aggregate by day 
+        if input.input_agg()=='day':
+            start_date = pd.to_datetime(input.input_slider_range()[0])
+            end_date = pd.to_datetime(input.input_slider_range()[1])
+            data = data[data["time"].between(start_date, end_date, inclusive='both')]
+        
+
+        # Plotting the stack plot
+        chart = alt.Chart(data).mark_area().encode(
+            y=alt.Y('total',title='Total sales'),
+            x = 'time:T',
+            color = alt.Color(input_comparison,title = input.input_comparison(),scale=alt.Scale(range=tab10_hex)),
+            tooltip=[input_comparison,'time','total']
+        )
+        
+        return chart
+
+
+    @render_altair
+    def plot_sales_trend():
+
+        req(len(input.input_metrics()) > 0) # Require at least one metric to be selected
 
         resamp_df, metric, city = resample()
 
         line = line_plot(resamp_df, metric, city)
 
         return line
+    
+
+    @render.ui
+    def metrics_warning():
+        """
+        Outputs a warning message if no metric is selected.
+        """
+        if len(input.input_metrics()) == 0: # Used Claude.ai to help suggest ways to warn user to select at least one metric
+            return ui.help_text("⚠️ Please select at least one metric.⚠️")
+        
+    @reactive.effect
+    def _update_dates():
+        start, end = input.input_date_range()[0], input.input_date_range()[1]
+        ui.update_slider("input_slider_range", 
+                         label="Select a date range:",
+                         min=start, 
+                         max=end, 
+                         value = [start,end],
+                         step = 1,
+                         time_format="%Y-%m-%d"
+                        )
+
+
+    # ## Debug outputs (to be removed before release)
+    # @output
+    # @render.data_frame
+    # def tbl_filtered():
+    #     """For debug only: Display the filtered DataFrame"""
+    #     return render.DataGrid(df_filtered(), height="280px")
+
+    # @output
+    # @render.data_frame
+    # def tbl_filtered_product():
+    #     """For debug only: Display the filtered DataFrame"""
+    #     return render.DataGrid(df_filtered_product(), height="280px")
+
+    # @output
+    # @render.text
+    # def debug_inputs():
+    #     """For debug only: Display the current input values"""
+    #     return (
+    #         f"metrics = {list(input.input_metrics() or [])}\n"
+    #         f"aggregation = {input.input_agg()}\n"
+    #         f"method = {input.input_agg_method()}\n"
+    #         f"date_range = {input.input_date_range()}\n"
+    #         f"branch = {input.input_branch()}\n"
+    #         f"number of filtered rows = {len(df_filtered())}\n"
+    #   )
+
+    
 
 app = App(app_ui, server)
