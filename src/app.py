@@ -180,7 +180,7 @@ app_ui = ui.page_fluid(
                                 "border: 1px dashed #d1d5db; border-radius: 10px;"
                             )
                         },
-                        output_widget("time_series_line"),
+                        output_widget("plot_sales_trend"),
                     ),
                 ),
                 col_widths=(12,),
@@ -192,7 +192,7 @@ app_ui = ui.page_fluid(
                         ui.panel_conditional(   # Used Claude.ai to suggest which ui.* to use for adding a slider conditional on user input
                             "input.input_agg === 'day'", # If the user chooses to aggregate by day, then use a slider to determine what date range to show
                             ui.input_slider(
-                                "range",
+                                "input_slider_range",
                                 "Select a date range:",
                                 min = pd.to_datetime('2019-01-01'),
                                 max = pd.to_datetime('2019-03-31'),
@@ -207,7 +207,7 @@ app_ui = ui.page_fluid(
                         ),
                         col_widths=[7, 5]
                     ),
-                    output_widget("stack_plot"),
+                    output_widget("plot_sales_mix"),
                     full_screen=True
                 ),
                 ui.card(
@@ -218,25 +218,25 @@ app_ui = ui.page_fluid(
                 col_widths=(6, 6),
             ),
             # TODO: to be commented out before release
-            ui.hr(),
-            ui.layout_columns(
-                ui.card(
-                    ui.card_header("df_filtered (debug)"),
-                    ui.output_data_frame("tbl_filtered"),
-                ),
-                ui.card(
-                    ui.card_header("df_filtered_product (debug)"),
-                    ui.output_data_frame("tbl_filtered_product"),
-                ),
-                col_widths=(7, 5),
-            ),
-            ui.layout_columns(
-                ui.card(
-                    ui.card_header("Inputs (debug)"),
-                    ui.output_text_verbatim("debug_inputs"),
-                ),
-                col_widths=(12,),
-            ),
+            # ui.hr(),
+            # ui.layout_columns(
+            #     ui.card(
+            #         ui.card_header("df_filtered (debug)"),
+            #         ui.output_data_frame("tbl_filtered"),
+            #     ),
+            #     ui.card(
+            #         ui.card_header("df_filtered_product (debug)"),
+            #         ui.output_data_frame("tbl_filtered_product"),
+            #     ),
+            #     col_widths=(7, 5),
+            # ),
+            # ui.layout_columns(
+            #     ui.card(
+            #         ui.card_header("Inputs (debug)"),
+            #         ui.output_text_verbatim("debug_inputs"),
+            #     ),
+            #     col_widths=(12,),
+            # ),
         ),
     ),
 ) 
@@ -426,7 +426,7 @@ def server(input, output, session):
         )
     
     @render_altair
-    def stack_plot():
+    def plot_sales_mix():
         """
         This function uses user input to determine what to compare in the plot (Product line, Customer type, Payment type, Gender) 
         and what date range to choose from if the values are aggregated by day. 
@@ -442,8 +442,8 @@ def server(input, output, session):
 
         # If user chooses to aggregate by day 
         if input.input_agg()=='day':
-            start_date = pd.to_datetime(input.range()[0])
-            end_date = pd.to_datetime(input.range()[1])
+            start_date = pd.to_datetime(input.input_slider_range()[0])
+            end_date = pd.to_datetime(input.input_slider_range()[1])
             data = data[data["time"].between(start_date, end_date, inclusive='both')]
         
 
@@ -459,7 +459,7 @@ def server(input, output, session):
 
 
     @render_altair
-    def time_series_line():
+    def plot_sales_trend():
 
         req(len(input.input_metrics()) > 0) # Require at least one metric to be selected
 
@@ -481,7 +481,7 @@ def server(input, output, session):
     @reactive.effect
     def _update_dates():
         start, end = input.input_date_range()[0], input.input_date_range()[1]
-        ui.update_slider("range", 
+        ui.update_slider("input_slider_range", 
                          label="Select a date range:",
                          min=start, 
                          max=end, 
