@@ -62,6 +62,49 @@ def to_snake_case(name: str) -> str:
     s = re.sub(r"_+", "_", s).strip("_")
     return s
 
+def line_plot(df, metrics, category) -> alt.Chart:
+    df = df.copy()
+    
+    df = df.reset_index()
+    
+    lines = []
+
+    branch_map = {'A': 'Yangon', 'B': 'Mandalay', 'C': 'Naypyitaw'}
+
+    if category in branch_map.keys():
+        category = branch_map[category]
+    
+    for met in metrics:
+        met_sc = to_snake_case(met)
+    
+        if met_sc =='gross_margin_percentage':
+             unit = '%'
+        else:
+            unit = 'K'
+
+        df_met = df[df['metric'] == met_sc]
+
+        df_met['metric'] = met.title()
+
+        line = alt.Chart(df_met).mark_line().encode(
+            x=alt.X('date:T', axis=alt.Axis(labelAngle=270)),
+            y=alt.Y('value:Q', title=met.title(), axis=alt.Axis(labelExpr=f"datum.value + '{unit}'")),
+            color=alt.Color('metric:N', legend=alt.Legend(title=''))
+        )
+        
+        lines.append(line)
+    
+    if category == 'all':
+        title = f'Time Series Across {category.title()} Cities'
+    else:
+        title = f'Time Series for the City of {category.title()}'
+
+    comb = alt.layer(*lines).properties(
+        width=1400, height=300,
+        title=title
+    )
+
+    return comb
 
 ## App interface
 app_ui = ui.page_fluid(
@@ -176,52 +219,7 @@ app_ui = ui.page_fluid(
             ),
         ),
     ),
-)
-
-# ── helpers ─────────────────────────────────────────────────────────
-def line_plot(df, metrics, category) -> alt.Chart:
-    df = df.copy()
-    
-    df = df.reset_index()
-    
-    lines = []
-
-    branch_map = {'A': 'Yangon', 'B': 'Mandalay', 'C': 'Naypyitaw'}
-
-    if category in branch_map.keys():
-        category = branch_map[category]
-    
-    for met in metrics:
-        met_sc = to_snake_case(met)
-    
-        if met_sc =='gross_margin_percentage':
-             unit = '%'
-        else:
-            unit = 'K'
-
-        df_met = df[df['metric'] == met_sc]
-
-        df_met['metric'] = met.title()
-
-        line = alt.Chart(df_met).mark_line().encode(
-            x=alt.X('date:T', axis=alt.Axis(labelAngle=270)),
-            y=alt.Y('value:Q', title=met.title(), axis=alt.Axis(labelExpr=f"datum.value + '{unit}'")),
-            color=alt.Color('metric:N', legend=alt.Legend(title=''))
-        )
-        
-        lines.append(line)
-    
-    if category == 'all':
-        title = f'Time Series Across {category.title()} Cities'
-    else:
-        title = f'Time Series for the City of {category.title()}'
-
-    comb = alt.layer(*lines).properties(
-        width=1400, height=300,
-        title=title
-    )
-
-    return comb 
+) 
 
 # ── server ──────────────────────────────────────────────────────────
 def server(input, output, session):
