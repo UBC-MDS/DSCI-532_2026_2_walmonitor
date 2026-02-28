@@ -194,19 +194,25 @@ def line_plot(df, metrics, category) -> alt.Chart:
         category = branch_map[category]
     
     for met in metrics:
-        met = to_snake_case(met)
+        met_sc = to_snake_case(met)
+    
+        print(met_sc)
         print(met)
-        if met =='gross_margin_percentage':
+        if met_sc =='gross_margin_percentage':
              unit = '%'
         else:
             unit = 'K'
 
-        df_met = df[df['metric'] == met]
+        df_met = df[df['metric'] == met_sc]
+        print(df_met)
+
+        df_met['metric'] = met.title()
+
         print(df_met)
 
         line = alt.Chart(df_met).mark_line().encode(
             x=alt.X('date:T', axis=alt.Axis(labelAngle=270)),
-            y=alt.Y('value:Q', title=met, axis=alt.Axis(labelExpr=f"datum.value + '{unit}'")),
+            y=alt.Y('value:Q', title=met.title(), axis=alt.Axis(labelExpr=f"datum.value + '{unit}'")),
             color=alt.Color('metric:N', legend=alt.Legend(title=''))
         )
         
