@@ -75,16 +75,6 @@ def make_line_plot(df_wide, metrics) -> alt.Chart:
     selected_cols = [to_snake_case(m) for m in metrics]
     selected_cols = [c for c in selected_cols if c in df_wide.columns]
 
-    if not selected_cols:
-        return (
-            alt.Chart(
-                pd.DataFrame({"note": ["Selected metrics not found in df_filtered()."]})
-            )
-            .mark_text(align="left")
-            .encode(text="note:N")
-            .properties(height=260, width="container")
-        )
-
     snake_to_label = {to_snake_case(k): v for k, v in METRIC_CHOICES.items()}
 
     df_long = df_wide[["date"] + selected_cols].melt(
