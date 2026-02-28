@@ -13,7 +13,7 @@
 ### Changed
 
 * User stories and specifications refined (`reports/m2_spec.md`)
-* `conda` environment updated to include `matplotlib` and upgrade `altair` to version 5.5.0 (`environment.yml`).
+* `conda` environment updated to include `matplotlib` and upgrade `altair` to version 5.5.0 with `vegafusion`(`environment.yml`).
 
 ### Known Issues
 
