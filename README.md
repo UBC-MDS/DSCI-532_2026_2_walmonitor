@@ -11,7 +11,20 @@ Walmonitor is a dashboard for visualizing the performance of Walmart stores acro
 * [Yuheng Ouyang](https://github.com/yhouyang02)
 * [Li Pu](https://github.com/Coachyyds)
 
-## Get started
+## Users
+
+The primary users of this dashboard are Walmart store managers and regional directors who need to monitor store performance and make data-driven decisions. Prospective users also include analysts and executives who require insights into sales trends and product performance across the company. You can check out what the dashboard provides from the web app (adjust your browser zoom level for the best viewing experience):
+
+* Stable: <https://yhouyang02-walmonitor.share.connect.posit.cloud/>
+* Preview: <https://019c9e5b-677b-b15d-18c3-2f360a7b781a.share.connect.posit.cloud/>
+
+For a demo on how to use the dashboard, please refer to the animation:
+
+![Demo animation](./img/demo.gif)
+
+You can also apply your own dataset to the dashboard by following the instructions in the next section. Simply replace the `data/raw/walmart_sales_data.csv` file with your dataset (make sure to keep the same format and column names) and run the app locally.
+
+## Contributors
 
 You can run this app locally following the instructions below.
 
@@ -34,6 +47,12 @@ You can run this app locally following the instructions below.
     conda activate walmonitor
     ```
 
+    Alternatively, you can install the dependencies using `pip`:
+
+    ```bash
+    pip install -r requirements.txt  # not required if using conda
+    ```
+
 4. Run the app in reload mode:
 
     ```bash
@@ -41,8 +60,6 @@ You can run this app locally following the instructions below.
     ```
 
 5. Check the terminal for the local URL (e.g., `http://127.0.0.1:8000`) and open it in your web browser to view the dashboard.
-
-## Development
 
 To contribute to this project, please refer to the [contribution guidelines](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md).
 
