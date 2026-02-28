@@ -43,10 +43,23 @@ flowchart LR
   G --> P2([plot_sales_mix])
   G --> P3([plot_product_lines])  
 ```
+
 ## Calculation Details
-For each @reactive.calc in your diagram, briefly describe:
 
-Which inputs it depends on.
-What transformation it performs (e.g., "filters rows to the selected year range and region(s)").
-Which outputs consume it.
+The dashboard consists of two reactive calculations df_filtered and df_filtered_product, that take any user input changes to automatically update the two outputs to the dashboard in real time. Each reactive calculation depends on user inputs which can be modified in the left-hand dashboard panel and each reactive calculation produces a different modified dataframe, which are then consumed by altair output plots. These inputs allow the user to change which sales metrics are displayed, the aggregation method used per period, the examined date range and whether the metrics are displayed for a single branch or for all the branches combined.
 
+@reactive.calc
+df_filtered
+
+- Input: input_metrics, input_agg, input_agg_method, input_date_range, input_branch
+- Transformation: filter the raw walmart dataframe by date range, selected metrics, chosen aggregation method, aggregation period and selected branches in a way compatible with the plot_sales_trend altair plot
+- Output: plot_sales_trend altair plot (@render_altair)
+  - This output is the time series line plot displayed in the top half of the dashboard
+
+@reactive.calc
+df_filtered_product
+
+- Input: input_metrics, input_agg, input_agg_method, input_date_range, input_branch, input_comparison
+- Transformation: filter the raw walmart dataframe by date range, selected metrics, chosen aggregation method, aggregation period and selected branches in a way compatible with both the plot_sales_mix altair plot and the plot_product_lines altair plot
+- Outputs: plot_sales_mix altair plot (@render_altair), plot_product_lines altair plot (@render_altair)
+  - The plot_sales_mix output is the stacked area over time plot displayed in the bottom left of the dashboard and the plot_product_lines output is the ranked bar chart displayed in the bottom right of the dashboard
