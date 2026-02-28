@@ -469,7 +469,7 @@ def server(input, output, session):
 
         return line
     
-    
+
     @render.ui
     def metrics_warning():
         """
@@ -477,6 +477,19 @@ def server(input, output, session):
         """
         if len(input.input_metrics()) == 0: # Used Claude.ai to help suggest ways to warn user to select at least one metric
             return ui.help_text("⚠️ Please select at least one metric.⚠️")
+        
+    @reactive.effect
+    def _update_dates():
+        start, end = input.input_date_range()[0], input.input_date_range()[1]
+        ui.update_slider("range", 
+                         label="Select a date range:",
+                         min=start, 
+                         max=end, 
+                         value = [start,end],
+                         step = 1,
+                         time_format="%Y-%m-%d"
+                        )
+
 
     # ## Debug outputs (to be removed before release)
     # @output
@@ -502,7 +515,7 @@ def server(input, output, session):
     #         f"date_range = {input.input_date_range()}\n"
     #         f"branch = {input.input_branch()}\n"
     #         f"number of filtered rows = {len(df_filtered())}\n"
-     #   )
+    #   )
 
     
 
