@@ -1,6 +1,12 @@
 # App specification
 
-## Updated Job Stories
+## Updated Job/User Stories
+
+| #   | Job/User Story                       | Status         | Notes                         |
+| --- | ------------------------------- | -------------- | ----------------------------- |
+| 1   | As the Operations manager, I want to monitor sales metrics over time for all three branches combined or specific branches, so I can spot peaks, dips, and trends for high-level store planning, labour allocation and performance improvement targets overall or for a specific branch. | 🔄 Revised | Modified to include examination of the performance of all branches together or a specific selected branch on the dashboard, for a more targeted look at sales metric trends over time.                             |
+| 2   | As the Operations manager, I want to see which product lines are gaining/losing importance, as well as how sales are spread across payment methods and customer characteristics (like gender, membership, etc.), so I can detect structural shifts and react with inventory/promo focus.| 🔄 Revised     | Added sales metric mix over time across multiple toggleable categories to make the dashboard more informative to the user beyond just the product lines.|
+| 3   | As the Operations manager, I want to identify the top product lines, payment methods and customer characteristics over the entire analyzed time period, and whether the rankings differ by sales vs gross income so I know what to prioritize in the annual report.|  🔄 Revised   | Expanded the set of ranked categories for sales metrics to include other categories than just product line to compliment the sales  mix over time chart and user story 2 output, as well as provided high-level sales insight for the entire examined period of time|
 
 ## Component Inventory
 
@@ -37,3 +43,10 @@ flowchart LR
   G --> P2([plot_sales_mix])
   G --> P3([plot_product_lines])  
 ```
+## Calculation Details
+For each @reactive.calc in your diagram, briefly describe:
+
+Which inputs it depends on.
+What transformation it performs (e.g., "filters rows to the selected year range and region(s)").
+Which outputs consume it.
+
