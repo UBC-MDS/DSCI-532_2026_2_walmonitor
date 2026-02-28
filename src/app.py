@@ -88,15 +88,20 @@ def make_line_plot(df_wide, metrics) -> alt.Chart:
         alt.Chart(df_long)
         .mark_line()
         .encode(
-            x=alt.X("date:T", axis=alt.Axis(labelAngle=270)),
+            x=alt.X(
+                "date:T",
+                axis=alt.Axis(
+                    labelAngle=0,
+                    format="%Y-%m-%d",
+                    title="Date",
+                ),
+            ),
             y=alt.Y("value:Q", title=None),
             color=alt.Color(
                 "metric_label:N",
                 legend=alt.Legend(
                     title="Metrics",
-                    orient="none",
-                    legendX=800,
-                    legendY=10,
+                    orient="top-right",
                     direction="vertical",
                     fillColor="white",
                     strokeColor="#ddd",
@@ -109,7 +114,7 @@ def make_line_plot(df_wide, metrics) -> alt.Chart:
                 alt.Tooltip("value:Q", title="Value", format=",.2f"),
             ],
         )
-        .properties(height=300, width="container")
+        .properties(height=350, width="container")
     )
 
     return chart
@@ -238,23 +243,31 @@ app_ui = ui.page_fluid(
             ui.layout_columns(
                 ui.card(
                     ui.card_header("Sales Mix Over Time"),
-                    ui.panel_conditional(  # Used Claude.ai to suggest which ui.* to use for adding a slider conditional on user input
-                        "input.input_agg === 'day'",  # If the user chooses to aggregate by day, then use a slider to determine what date range to show
-                        ui.input_slider(
-                            "input_slider_range",
-                            "Select a date range:",
-                            min=pd.to_datetime("2019-01-01"),
-                            max=pd.to_datetime("2019-03-31"),
-                            value=[
-                                pd.to_datetime("2019-02-01"),
-                                pd.to_datetime("2019-02-28"),
-                            ],
-                            ticks=True,
-                            step=1,
-                            time_format="%Y-%m-%d",
-                        ),
-                        ui.help_text(
-                            "For the best results, use the slider to select a smaller date range to view (we suggest one month)."
+                    ui.panel_conditional(
+                        "input.input_agg === 'day'",
+                        ui.div(
+                            ui.div(
+                                ui.help_text(
+                                    "For the best results, use the slider to view a smaller date range (e.g. one month)."
+                                ),
+                                style="margin-bottom: 8px;",
+                            ),
+                            ui.div(
+                                ui.input_slider(
+                                    "input_slider_range",
+                                    "",
+                                    min=pd.to_datetime("2019-01-01"),
+                                    max=pd.to_datetime("2019-03-31"),
+                                    value=[
+                                        pd.to_datetime("2019-02-01"),
+                                        pd.to_datetime("2019-02-28"),
+                                    ],
+                                    ticks=True,
+                                    step=1,
+                                    time_format="%Y-%m-%d",
+                                ),
+                                style="margin-top: -20px; margin-bottom: -20px; padding-left: 40px;",
+                            ),
                         ),
                     ),
                     output_widget("plot_sales_mix"),
@@ -374,7 +387,7 @@ def server(input, output, session):
         start, end = input.input_date_range()[0], input.input_date_range()[1]
         ui.update_slider(
             "input_slider_range",
-            label="Select a date range:",
+            label="",
             min=start,
             max=end,
             value=[start, end],
@@ -427,11 +440,16 @@ def server(input, output, session):
             .mark_area()
             .encode(
                 y=alt.Y("total", title="Total sales"),
-                x="time:T",
+                x=alt.X("time:T", title="Date"),
                 color=alt.Color(
                     input_comparison,
                     title=input.input_comparison(),
                     scale=alt.Scale(range=tab10_hex),
+                    legend=alt.Legend(
+                        orient="bottom",
+                        direction="horizontal",
+                        columns=3
+                    ),
                 ),
                 tooltip=[input_comparison, "time", "total"],
             )
