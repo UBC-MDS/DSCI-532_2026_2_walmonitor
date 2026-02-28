@@ -90,9 +90,21 @@ def make_line_plot(df_wide, metrics) -> alt.Chart:
         .encode(
             x=alt.X("date:T", axis=alt.Axis(labelAngle=270)),
             y=alt.Y("value:Q", title=None),
-            color=alt.Color("metric_label:N", legend=alt.Legend(title="")),
+            color=alt.Color(
+                "metric_label:N",
+                legend=alt.Legend(
+                    title="Metrics",
+                    orient="none",
+                    legendX=800,
+                    legendY=10,
+                    direction="vertical",
+                    fillColor="white",
+                    strokeColor="#ddd",
+                    padding=6,
+                ),
+            ),
             tooltip=[
-                alt.Tooltip("Date:T", title="Date"),
+                alt.Tooltip("date:T", title="Date"),
                 alt.Tooltip("metric_label:N", title="Metric"),
                 alt.Tooltip("value:Q", title="Value", format=",.2f"),
             ],
@@ -101,6 +113,54 @@ def make_line_plot(df_wide, metrics) -> alt.Chart:
     )
 
     return chart
+
+
+def make_ranked_product_lines_bars(
+    df, top_n=6, method="sum", comparison="product_line"
+):
+    rank = (
+        df.groupby(comparison, dropna=False)["total"]
+        .agg("sum" if method == "sum" else "mean")
+        .sort_values(ascending=False)
+    )
+
+    top = rank.head(top_n)
+    if len(rank) > top_n:
+        top = pd.concat([top, pd.Series({"Other": rank.iloc[top_n:].sum()})])
+
+    labels = top.index.tolist()[::-1]
+    values = top.values[::-1]
+
+    palette = list(plt.get_cmap("tab10").colors)
+    # consistent mapping by alphabetical order (stable across filters)
+    base_lines = sorted([x for x in df[comparison].dropna().unique() if x != "Other"])
+    color_map = {name: palette[i % len(palette)] for i, name in enumerate(base_lines)}
+    color_map["Other"] = (0.7, 0.7, 0.7)  # neutral gray for "Other"
+
+    bar_colors = [color_map.get(lbl, palette[0]) for lbl in labels]
+
+    max_len = max((len(str(x)) for x in labels), default=10)
+    fig_w = 7.8
+    fig_h = max(3.2, 0.45 * len(labels) + 1.2)
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h))
+
+    ax.barh(labels, values, color=bar_colors)
+
+    ax.set_ylabel("")
+    ax.set_xlabel(
+        "Total Sales" if method == "sum" else "Average Sales",
+        labelpad=10,  # <- adds padding under x-axis label
+    )
+
+    # Give y tick labels some breathing room
+    ax.tick_params(axis="y", pad=6)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    left_margin = min(0.55, max(0.25, 0.18 + 0.012 * max_len))
+    fig.subplots_adjust(left=left_margin, right=0.97, top=0.90, bottom=0.22)
+
+    return fig
 
 
 ## App interface
@@ -116,7 +176,7 @@ app_ui = ui.page_fluid(
             # Metrics checkboxes
             ui.input_checkbox_group(
                 "input_metrics",
-                "Metrics (line plot)",
+                "Metrics",
                 choices=METRIC_CHOICES,
                 selected=DEFAULT_METRICS,
             ),
@@ -202,7 +262,7 @@ app_ui = ui.page_fluid(
                 ),
                 ui.card(
                     ui.card_header("Ranked Sales"),
-                    ui.output_plot("plot_product_lines", height="300px"),
+                    ui.output_plot("plot_product_lines", height="200px"),
                     full_screen=True,
                 ),
                 col_widths=(7, 5),
@@ -230,54 +290,6 @@ app_ui = ui.page_fluid(
         ),
     ),
 )
-
-
-def make_ranked_product_lines_bars(
-    df, top_n=6, method="sum", comparison="product_line"
-):
-    rank = (
-        df.groupby(comparison, dropna=False)["total"]
-        .agg("sum" if method == "sum" else "mean")
-        .sort_values(ascending=False)
-    )
-
-    top = rank.head(top_n)
-    if len(rank) > top_n:
-        top = pd.concat([top, pd.Series({"Other": rank.iloc[top_n:].sum()})])
-
-    labels = top.index.tolist()[::-1]
-    values = top.values[::-1]
-
-    palette = list(plt.get_cmap("tab10").colors)
-    # consistent mapping by alphabetical order (stable across filters)
-    base_lines = sorted([x for x in df[comparison].dropna().unique() if x != "Other"])
-    color_map = {name: palette[i % len(palette)] for i, name in enumerate(base_lines)}
-    color_map["Other"] = (0.7, 0.7, 0.7)  # neutral gray for "Other"
-
-    bar_colors = [color_map.get(lbl, palette[0]) for lbl in labels]
-
-    max_len = max((len(str(x)) for x in labels), default=10)
-    fig_w = 7.8
-    fig_h = max(3.2, 0.45 * len(labels) + 1.2)
-    fig, ax = plt.subplots(figsize=(fig_w, fig_h))
-
-    ax.barh(labels, values, color=bar_colors)
-
-    ax.set_ylabel("")
-    ax.set_xlabel(
-        "Total Sales" if method == "sum" else "Average Sales",
-        labelpad=10,  # <- adds padding under x-axis label
-    )
-
-    # Give y tick labels some breathing room
-    ax.tick_params(axis="y", pad=6)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-
-    left_margin = min(0.55, max(0.25, 0.18 + 0.012 * max_len))
-    fig.subplots_adjust(left=left_margin, right=0.97, top=0.90, bottom=0.22)
-
-    return fig
 
 
 ## Server
