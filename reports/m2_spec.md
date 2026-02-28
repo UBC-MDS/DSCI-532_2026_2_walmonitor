@@ -55,7 +55,7 @@ flowchart LR
 
 ## Calculation Details
 
-The dashboard consists of two reactive calculations `df_filtered` and `df_filtered_product`, that take any user input changes to automatically update the two outputs to the dashboard in real time. Each reactive calculation depends on user inputs which can be modified in the left-hand dashboard panel and each reactive calculation produces a different modified DataFrame, which are then consumed by `altair` and `matplotlib.pyplot` plots. These inputs allow the user to change which sales metrics are displayed, the aggregation method used per period, the examined date range and whether the metrics are displayed for a single branch or for all the branches combined.
+The dashboard consists of two reactive calculations `df_filtered` and `df_filtered_product`, that take any user input changes to automatically update the plotted outputs on the dashboard in real time. Each reactive calculation depends on user inputs which can be modified in the left-hand dashboard panel and each reactive calculation produces a different modified DataFrame, which are then consumed by `altair` and `matplotlib.pyplot` plots. These inputs allow the user to change which sales metrics are displayed, the aggregation method used per period, the examined date range and whether the metrics are displayed for a single branch or for all the branches combined.
 
 ### `df_filtered`
 
