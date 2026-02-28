@@ -2,14 +2,13 @@ import re
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import date
-from pathlib import Path
-
 from shiny import App, ui, render, reactive
-
-from shiny import App, ui, render
+from shinywidgets import output_widget, render_altair
 import altair as alt
-import pandas as pd
-from shinywidgets import render_altair, output_widget
+alt.data_transformers.enable('vegafusion')
+import warnings
+warnings.filterwarnings('ignore', module='altair')
+from pathlib import Path
 
 ## Input choices and defaults
 METRIC_CHOICES = {
@@ -28,11 +27,12 @@ METHOD_CHOICES = {"sum": "Sum", "mean": "Mean"}
 DEFAULT_METHOD = "sum"
 
 BRANCH_CHOICES = {
-    "all": "All Branches",
+    "all": "All Branches / Cities",
     "A": "Branch A",
     "B": "Branch B",
     "C": "Branch C",
 }
+
 DEFAULT_BRANCH = "all"
 
 DEFAULT_START = date(2019, 1, 1)
@@ -47,6 +47,60 @@ DATA_RAW = pd.read_csv(DATA_PATH)
 DATA_RAW["Date"] = pd.to_datetime(DATA_RAW["Date"])
 BASE_COLS = ["Date", "Branch", "Product line"] + list(METRIC_CHOICES.keys())
 DATA_BASE = DATA_RAW[BASE_COLS].copy()  # Crop unused columns
+
+## Helper functions
+def to_snake_case(name: str) -> str:
+    """Convert a string to snake_case, suitable for column names."""
+    s = str(name).strip().lower()
+    s = s.replace("%", "pct")
+    s = re.sub(r"[^\w\s]", " ", s)
+    s = re.sub(r"\s+", "_", s)
+    s = re.sub(r"_+", "_", s).strip("_")
+    return s
+
+def line_plot(df, metrics, category) -> alt.Chart:
+    df = df.copy()
+    
+    df = df.reset_index()
+    
+    lines = []
+
+    branch_map = {'A': 'Yangon', 'B': 'Mandalay', 'C': 'Naypyitaw'}
+
+    if category in branch_map.keys():
+        category = branch_map[category]
+    
+    for met in metrics:
+        met_sc = to_snake_case(met)
+    
+        if met_sc =='gross_margin_percentage':
+             unit = '%'
+        else:
+            unit = 'K'
+
+        df_met = df[df['metric'] == met_sc]
+
+        df_met['metric'] = met.title()
+
+        line = alt.Chart(df_met).mark_line().encode(
+            x=alt.X('date:T', axis=alt.Axis(labelAngle=270)),
+            y=alt.Y('value:Q', title=met.title(), axis=alt.Axis(labelExpr=f"datum.value + '{unit}'")),
+            color=alt.Color('metric:N', legend=alt.Legend(title=''))
+        )
+        
+        lines.append(line)
+    
+    if category == 'all':
+        title = f'Time Series Across {category.title()} Cities'
+    else:
+        title = f'Time Series for the City of {category.title()}'
+
+    comb = alt.layer(*lines).properties(
+        width=1400, height=300,
+        title=title
+    )
+
+    return comb
 
 ## App interface
 app_ui = ui.page_fluid(
@@ -118,12 +172,12 @@ app_ui = ui.page_fluid(
                     ui.div(
                         {
                             "style": (
-                                "height: 260px; display:flex; align-items:center; "
+                                "height: 400px; display:flex; align-items:center; "
                                 "justify-content:center; color:#6b7280; "
                                 "border: 1px dashed #d1d5db; border-radius: 10px;"
                             )
                         },
-                        "Time-series overlay lines",
+                        output_widget("time_series_line"),
                     ),
                 ),
                 col_widths=(12,),
@@ -182,19 +236,7 @@ app_ui = ui.page_fluid(
             ),
         ),
     ),
-)
-
-
-## Helper functions
-def to_snake_case(name: str) -> str:
-    """Convert a string to snake_case, suitable for column names."""
-    s = str(name).strip().lower()
-    s = s.replace("%", "pct")
-    s = re.sub(r"[^\w\s]", " ", s)
-    s = re.sub(r"\s+", "_", s)
-    s = re.sub(r"_+", "_", s).strip("_")
-    return s
-
+) 
 
 def product_lines_plot(df, top_n=6, method="sum", comparison="product_line"):
     rank = (
@@ -392,5 +434,61 @@ def server(input, output, session):
         return chart
 
     
+    @reactive.calc
+    def resample():
+
+        df = df_filtered()
+
+        df['date'] =  pd.to_datetime(df['date'], format='%Y-%m-%d')
+
+        metric = input.input_metrics()
+
+        city = input.input_branch()
+            
+        if input.input_agg() == 'week':
+            resample_freq = 'W'
+        else:
+            resample_freq = 'D'
+
+        # Make date the index for resampling by week 
+        df = df.set_index('date')
+        
+        # Resample metric by summing or averaging across the chosen resampling period
+        # Note that if you resample on entire data frame metric per category info is lost
+        df_lst = []
+
+        for met in metric:
+            met = to_snake_case(met)
+            if met == 'gross_margin_percentage':
+                # for percentage average instead of summing
+                col_df = df.resample(resample_freq)[met].mean()
+                col_df = col_df.reset_index()
+                col_df['metric'] = met
+                # Put df in long format for time series plot
+                col_df = col_df.rename(columns={met: 'value'})
+                df_lst.append(col_df)
+            else:
+                # sum metrics that are totaled across resample period
+                col_df = df.resample(resample_freq)[met].sum()
+                col_df = col_df.reset_index()
+                col_df['metric'] = met
+                # Put df in long format for time series plot
+                col_df = col_df.rename(columns={met: 'value'})
+                df_lst.append(col_df)
+            
+        # Concatenate the resampled data frames for line plot
+        concat_df = pd.concat(df_lst)
+
+        return concat_df, metric, city
+
+    @output
+    @render_altair
+    def time_series_line():
+
+        resamp_df, metric, city = resample()
+
+        line = line_plot(resamp_df, metric, city)
+
+        return line
 
 app = App(app_ui, server)
