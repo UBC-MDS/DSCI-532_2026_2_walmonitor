@@ -9,6 +9,7 @@ alt.data_transformers.enable('vegafusion')
 import warnings
 warnings.filterwarnings('ignore', module='altair')
 from pathlib import Path
+from shiny import req
 
 ## Input choices and defaults
 METRIC_CHOICES = {
@@ -119,6 +120,8 @@ app_ui = ui.page_fluid(
                 choices=METRIC_CHOICES,
                 selected=DEFAULT_METRICS,
             ),
+            ui.output_ui("metrics_warning"),
+
             # Aggregation: day vs week
             ui.input_radio_buttons(
                 "input_agg",
@@ -291,6 +294,7 @@ def product_lines_plot(df, top_n=6, method="sum", comparison="product_line"):
 
 ## Server
 def server(input, output, session):
+    
     ## Reactive calcs
     @reactive.calc
     def df_filtered() -> pd.DataFrame:
@@ -365,74 +369,6 @@ def server(input, output, session):
         out = out.rename(columns={c: to_snake_case(c) for c in out.columns})
 
         return out
-
-    ## Outputs
-    @output
-    @render.plot
-    def plot_product_lines():
-        """Render the ranked product lines plot based on the filtered data."""
-        return product_lines_plot(
-            df_filtered_product(), method=input.input_agg_method(), comparison=to_snake_case(input.input_comparison())
-        )
-
-    ## Debug outputs (to be removed before release)
-    @output
-    @render.data_frame
-    def tbl_filtered():
-        """For debug only: Display the filtered DataFrame"""
-        return render.DataGrid(df_filtered(), height="280px")
-
-    @output
-    @render.data_frame
-    def tbl_filtered_product():
-        """For debug only: Display the filtered DataFrame"""
-        return render.DataGrid(df_filtered_product(), height="280px")
-
-    @output
-    @render.text
-    def debug_inputs():
-        """For debug only: Display the current input values"""
-        return (
-            f"metrics = {list(input.input_metrics() or [])}\n"
-            f"aggregation = {input.input_agg()}\n"
-            f"method = {input.input_agg_method()}\n"
-            f"date_range = {input.input_date_range()}\n"
-            f"branch = {input.input_branch()}\n"
-            f"number of filtered rows = {len(df_filtered())}\n"
-        )
-
-    @render_altair
-    def stack_plot():
-        """
-        This function uses user input to determine what to compare in the plot (Product line, Customer type, Payment type, Gender) 
-        and what date range to choose from if the values are aggregated by day. 
-        """
-        # Tab10 Hex Colors to match matplotlib tab10
-        tab10_hex = [
-            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
-            '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
-        ]
-
-        data = df_filtered_product()
-        input_comparison = to_snake_case(input.input_comparison())
-
-        # If user chooses to aggregate by day 
-        if input.input_agg()=='day':
-            start_date = pd.to_datetime(input.range()[0])
-            end_date = pd.to_datetime(input.range()[1])
-            data = data[data["time"].between(start_date, end_date, inclusive='both')]
-        
-
-        # Plotting the stack plot
-        chart = alt.Chart(data).mark_area().encode(
-            y=alt.Y('total',title='Total sales'),
-            x = 'time:T',
-            color = alt.Color(input_comparison,title = input.input_comparison(),scale=alt.Scale(range=tab10_hex)),
-            tooltip=[input_comparison,'time','total']
-        )
-        
-        return chart
-
     
     @reactive.calc
     def resample():
@@ -481,14 +417,93 @@ def server(input, output, session):
 
         return concat_df, metric, city
 
-    @output
+    ## Outputs
+    @render.plot
+    def plot_product_lines():
+        """Render the ranked product lines plot based on the filtered data."""
+        return product_lines_plot(
+            df_filtered_product(), method=input.input_agg_method(), comparison=to_snake_case(input.input_comparison())
+        )
+    
+    @render_altair
+    def stack_plot():
+        """
+        This function uses user input to determine what to compare in the plot (Product line, Customer type, Payment type, Gender) 
+        and what date range to choose from if the values are aggregated by day. 
+        """
+        # Tab10 Hex Colors to match matplotlib tab10
+        tab10_hex = [
+            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+            '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
+        ]
+
+        data = df_filtered_product()
+        input_comparison = to_snake_case(input.input_comparison())
+
+        # If user chooses to aggregate by day 
+        if input.input_agg()=='day':
+            start_date = pd.to_datetime(input.range()[0])
+            end_date = pd.to_datetime(input.range()[1])
+            data = data[data["time"].between(start_date, end_date, inclusive='both')]
+        
+
+        # Plotting the stack plot
+        chart = alt.Chart(data).mark_area().encode(
+            y=alt.Y('total',title='Total sales'),
+            x = 'time:T',
+            color = alt.Color(input_comparison,title = input.input_comparison(),scale=alt.Scale(range=tab10_hex)),
+            tooltip=[input_comparison,'time','total']
+        )
+        
+        return chart
+
+
     @render_altair
     def time_series_line():
+
+        req(len(input.input_metrics()) > 0) # Require at least one metric to be selected
 
         resamp_df, metric, city = resample()
 
         line = line_plot(resamp_df, metric, city)
 
         return line
+    
+    
+    @render.ui
+    def metrics_warning():
+        """
+        Outputs a warning message if no metric is selected.
+        """
+        if len(input.input_metrics()) == 0: # Used Claude.ai to help suggest ways to warn user to select at least one metric
+            return ui.help_text("⚠️ Please select at least one metric.⚠️")
+
+    # ## Debug outputs (to be removed before release)
+    # @output
+    # @render.data_frame
+    # def tbl_filtered():
+    #     """For debug only: Display the filtered DataFrame"""
+    #     return render.DataGrid(df_filtered(), height="280px")
+
+    # @output
+    # @render.data_frame
+    # def tbl_filtered_product():
+    #     """For debug only: Display the filtered DataFrame"""
+    #     return render.DataGrid(df_filtered_product(), height="280px")
+
+    # @output
+    # @render.text
+    # def debug_inputs():
+    #     """For debug only: Display the current input values"""
+    #     return (
+    #         f"metrics = {list(input.input_metrics() or [])}\n"
+    #         f"aggregation = {input.input_agg()}\n"
+    #         f"method = {input.input_agg_method()}\n"
+    #         f"date_range = {input.input_date_range()}\n"
+    #         f"branch = {input.input_branch()}\n"
+    #         f"number of filtered rows = {len(df_filtered())}\n"
+     #   )
+
+    
 
 app = App(app_ui, server)
