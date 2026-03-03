@@ -24,6 +24,8 @@ For a demo on how to use the dashboard, please refer to the animation:
 
 You can also apply your own dataset to the dashboard by following the instructions in the next section. Simply replace the `data/raw/walmart_sales_data.csv` file with your dataset (make sure to keep the same format and column names) and run the app locally.
 
+The dataset in the shown in the repository and shiny app was obtained from the [Walmart-Sales-Data-Analysis](https://github.com/MohammedShehbazDamkar/Walmart-Sales-Data-Analysis--SQL-Project/blob/main/Walmart%20Sales%20Data.csv.csv) public repository by  [Mohammed Shehbaz Damkar](https://github.com/MohammedShehbazDamkar).
+
 ## Contributors
 
 You can run this app locally following the instructions below.
