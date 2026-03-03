@@ -20,6 +20,8 @@ This dashboard will provide interactive visualizations that allow managers to ex
 
 The dataset contains 1000 transaction-level records from Walmart supermarket branches, with 17 variables.
 
+The dataset in the shown in the repository and shiny app was obtained from the [Walmart-Sales-Data-Analysis](https://github.com/MohammedShehbazDamkar/Walmart-Sales-Data-Analysis--SQL-Project/blob/main/Walmart%20Sales%20Data.csv.csv) public repository by  [Mohammed Shehbaz Damkar](https://github.com/MohammedShehbazDamkar).
+
 ### Stats
 
 - Observations: 1000 transactions
