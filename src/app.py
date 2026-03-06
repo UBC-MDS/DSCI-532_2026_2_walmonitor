@@ -181,11 +181,31 @@ qc = QueryChat(
     client=ctl.ChatGithub(model="gpt-4.1-mini"),
     greeting="""👋 Ask me anything about the Walmart Sales.
 
-* <span class="suggestion">What city generates the highest gross income on average?</span>
-* <span class="suggestion">How do sales prices vary over the given time period from January to March?</span>
-* <span class="suggestion">What is the relationship between unit price and quantity sold?</span>
-* <span class="suggestion">What is the average total sales per transaction?</span>
-""" 
+        * <span class="suggestion">What city generates the highest gross income on average?</span>
+        * <span class="suggestion">How do sales prices vary over the given time period from January to March?</span>
+        * <span class="suggestion">What is the relationship between unit price and quantity sold?</span>
+        * <span class="suggestion">What is the average total sales per transaction?</span>
+    """ ,
+    data_description="""
+        Walmart Sales Data (1000 Transactions).
+        - Invoice ID: Invoice of the sales made 
+        - Branch: Branch at which sales were made, 'A' (Yangon), 'B' (Mandalay), or 'C' (Naypyitaw)
+        - City: The location of the branch, 'Yangon', 'Mandalay', or 'Naypyitaw'
+        - Customer type: The type of the customer, 'Normal', or 'Member'
+        - Gender: Gender of the customer making purchase, 'Male', or 'Female'
+        - Product line: Product line of the product sold, 'Health and beauty', 'Electronic accessories', 'Home and lifestyle', 'Sports and travel', 'Food and beverages', or 'Fashion accessories'
+        - Unit price: The price of each product
+        - Quantity : The amount of the product sold
+        - Tax 5% : The amount of tax on the purchase
+        - Total : The total cost of the purchase
+        - Date : The date on which the purchase was made
+        - Time : The time at which the purchase was made
+        - Payment : The type of payment method used, 'Cash', 'Ewallet', or 'Credit card'
+        - cogs : Cost Of Goods sold
+        - gross margin percentage : Gross margin percentage
+        - gross income : Gross income
+        - Rating : Rating
+        """
 )
 
 ## App interface
