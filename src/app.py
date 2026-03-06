@@ -9,8 +9,12 @@ from pathlib import Path
 from shiny import App, ui, render, reactive
 from shinywidgets import render_altair, output_widget
 
-import querychat
-from chatlas import ChatGithub
+import chatlas as ctl
+import pandas as pd
+from dotenv import load_dotenv
+from querychat import QueryChat
+
+load_dotenv()
 
 alt.data_transformers.enable("vegafusion")
 warnings.filterwarnings("ignore", module="altair")
@@ -171,7 +175,11 @@ def make_ranked_product_lines_bars(
     return fig
 
 ## Querychat
-
+qc = QueryChat(
+    DATA_RAW.copy(),
+    "walmart",
+    client=ctl.ChatGithub(model="gpt-4.1-mini")
+)
 
 ## App interface
 app_ui = ui.page_fluid(
@@ -296,8 +304,10 @@ app_ui = ui.page_fluid(
         ),
         # ── Tab 2: LLM Chat ───────────────────────────────────────────────────────
         ui.nav_panel(
-            "LLM Chat"
-            
+            "LLM Chat",
+            ui.layout_sidebar(
+            qc.sidebar(title='Ask any questions:'),
+            )  
         )
     )
 )
