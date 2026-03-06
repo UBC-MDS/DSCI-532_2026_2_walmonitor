@@ -178,7 +178,14 @@ def make_ranked_product_lines_bars(
 qc = QueryChat(
     DATA_RAW.copy(),
     "walmart",
-    client=ctl.ChatGithub(model="gpt-4.1-mini")
+    client=ctl.ChatGithub(model="gpt-4.1-mini"),
+    greeting="""👋 Ask me anything about the Walmart Sales.
+
+* <span class="suggestion">What city generates the highest gross income on average?</span>
+* <span class="suggestion">How do sales prices vary over the given time period from January to March?</span>
+* <span class="suggestion">What is the relationship between unit price and quantity sold?</span>
+* <span class="suggestion">What is the average total sales per transaction?</span>
+""" 
 )
 
 ## App interface
@@ -307,6 +314,12 @@ app_ui = ui.page_fluid(
             "LLM Chat",
             ui.layout_sidebar(
             qc.sidebar(title='Ask any questions:'),
+            ui.card(
+                ui.card_header(ui.output_text("chat_title")),
+                ui.output_data_frame("chat_table"),
+                fill=True,
+            ),
+            fillable=True,
             )  
         )
     )
@@ -318,6 +331,8 @@ app_ui = ui.page_fluid(
 
 ## Server
 def server(input, output, session):
+
+    # ── Tab 1: reactive calcs ─────────────────────────────────────────────────
     ## Reactive calcs
     @reactive.calc
     def df_filtered() -> pd.DataFrame:
@@ -484,6 +499,17 @@ def server(input, output, session):
             len(input.input_metrics()) == 0
         ):  # Used Claude.ai to help suggest ways to warn user to select at least one metric
             return ui.help_text("⚠️ Please select at least one metric.⚠️")
+        
+    # ── Tab 2: querychat ──────────────────────────────────────────────────────
+    qc_vals = qc.server()
+
+    @render.text
+    def chat_title():
+        return qc_vals.title() or "Walmart dataset"
+
+    @render.data_frame
+    def chat_table():
+        return qc_vals.df()
 
     # ## Debug outputs (to be removed before release)
     # @output
