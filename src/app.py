@@ -9,6 +9,13 @@ from pathlib import Path
 from shiny import App, ui, render, reactive
 from shinywidgets import render_altair, output_widget
 
+import chatlas as ctl
+import pandas as pd
+from dotenv import load_dotenv
+from querychat import QueryChat
+
+load_dotenv()
+
 alt.data_transformers.enable("vegafusion")
 warnings.filterwarnings("ignore", module="altair")
 
@@ -167,146 +174,185 @@ def make_ranked_product_lines_bars(
 
     return fig
 
+## Querychat
+qc = QueryChat(
+    DATA_RAW.copy(),
+    "walmart",
+    client=ctl.ChatGithub(model="gpt-4.1-mini"),
+    greeting="""👋 Ask me anything about the Walmart Sales.
+
+* <span class="suggestion">What city generates the highest gross income on average?</span>
+* <span class="suggestion">Show me the top 10 times with the highest average total sales.</span>
+* <span class="suggestion">What is the relationship between unit price and quantity sold?</span>
+* <span class="suggestion">What is the average total sales per transaction?</span>
+    """ ,
+    data_description="""
+        Walmart Sales Data (1000 Transactions).
+        - Invoice ID: Invoice of the sales made 
+        - Branch: Branch at which sales were made, 'A' (Yangon), 'B' (Mandalay), or 'C' (Naypyitaw)
+        - City: The location of the branch, 'Yangon', 'Mandalay', or 'Naypyitaw'
+        - Customer type: The type of the customer, 'Normal', or 'Member'
+        - Gender: Gender of the customer making purchase, 'Male', or 'Female'
+        - Product line: Product line of the product sold, 'Health and beauty', 'Electronic accessories', 'Home and lifestyle', 'Sports and travel', 'Food and beverages', or 'Fashion accessories'
+        - Unit price: The price of each product
+        - Quantity : The amount of the product sold
+        - Tax 5% : The amount of tax on the purchase
+        - Total : The total cost of the purchase
+        - Date : The date on which the purchase was made
+        - Time : The time at which the purchase was made
+        - Payment : The type of payment method used, 'Cash', 'Ewallet', or 'Credit card'
+        - cogs : Cost Of Goods sold
+        - gross margin percentage : Gross margin percentage
+        - gross income : Gross income
+        - Rating : Rating
+        """
+)
 
 ## App interface
 app_ui = ui.page_fluid(
+
     ui.div(
-        ui.h2("Walmonitor 0.2.0"),
+        ui.h1("Walmonitor 0.2.0"),
         style="margin-top: 24px;",
     ),
-    # Control panel on the left
-    ui.layout_sidebar(
-        ui.sidebar(
-            ui.h4("Controls"),
-            # Metrics checkboxes
-            ui.input_checkbox_group(
-                "input_metrics",
-                "Metrics",
-                choices=METRIC_CHOICES,
-                selected=DEFAULT_METRICS,
-            ),
-            ui.output_ui("metrics_warning"),
-            # Aggregation: day vs week
-            ui.input_radio_buttons(
-                "input_agg",
-                "Aggregation",
-                choices=AGG_CHOICES,
-                selected=DEFAULT_AGG,
-                inline=True,
-            ),
-            # Aggregation method: sum vs mean
-            ui.input_radio_buttons(
-                "input_agg_method",
-                "Aggregation method",
-                choices=METHOD_CHOICES,
-                selected=DEFAULT_METHOD,
-                inline=True,
-            ),
-            # Date range
-            ui.input_date_range(
-                "input_date_range",
-                "Date range",
-                start=DEFAULT_START,
-                end=DEFAULT_END,
-                min=DEFAULT_START,
-                max=DEFAULT_END,
-            ),
-            # Branch dropdown
-            ui.input_select(
-                "input_branch",
-                "Branch",
-                choices=BRANCH_CHOICES,
-                selected=DEFAULT_BRANCH,
-            ),
-            ui.input_select(  # User decides what comparison they want highlighted on the plot
-                "input_comparison",
-                "Compare sales by",
-                choices={
-                    "Product line": "Product line",
-                    "Payment": "Payment type",
-                    "Gender": "Gender",
-                    "Customer type": "Customer type",
-                },
-                selected="Product line",
-            ),
-            width=320,
-        ),
-        # View panel on the right
-        ui.div(
-            ui.layout_columns(
-                ui.card(
-                    ui.card_header("Metrics Over Time"),
-                    output_widget("plot_sales_trend"),
+    
+    ui.navset_tab(
+        # ── Tab 1: Dashboard ───────────────────────────────────────────────────────
+        ui.nav_panel(
+            "Dashboard",
+            # Control panel on the left
+            ui.layout_sidebar(
+                ui.sidebar(
+                    ui.h4("Controls"),
+                    # Metrics checkboxes
+                    ui.input_checkbox_group(
+                        "input_metrics",
+                        "Metrics",
+                        choices=METRIC_CHOICES,
+                        selected=DEFAULT_METRICS,
+                    ),
+                    ui.output_ui("metrics_warning"),
+                    # Aggregation: day vs week
+                    ui.input_radio_buttons(
+                        "input_agg",
+                        "Aggregation",
+                        choices=AGG_CHOICES,
+                        selected=DEFAULT_AGG,
+                        inline=True,
+                    ),
+                    # Aggregation method: sum vs mean
+                    ui.input_radio_buttons(
+                        "input_agg_method",
+                        "Aggregation method",
+                        choices=METHOD_CHOICES,
+                        selected=DEFAULT_METHOD,
+                        inline=True,
+                    ),
+                    # Date range
+                    ui.input_date_range(
+                        "input_date_range",
+                        "Date range",
+                        start=DEFAULT_START,
+                        end=DEFAULT_END,
+                        min=DEFAULT_START,
+                        max=DEFAULT_END,
+                    ),
+                    # Branch dropdown
+                    ui.input_select(
+                        "input_branch",
+                        "Branch",
+                        choices=BRANCH_CHOICES,
+                        selected=DEFAULT_BRANCH,
+                    ),
+                    ui.input_select(  # User decides what comparison they want highlighted on the plot
+                        "input_comparison",
+                        "Compare sales by",
+                        choices={
+                            "Product line": "Product line",
+                            "Payment": "Payment type",
+                            "Gender": "Gender",
+                            "Customer type": "Customer type",
+                        },
+                        selected="Product line",
+                    ),
+                    width=320,
                 ),
-                col_widths=(12,),
-            ),
-            ui.layout_columns(
-                ui.card(
-                    ui.card_header("Sales Mix Over Time"),
-                    ui.panel_conditional(
-                        "input.input_agg === 'day'",
-                        ui.div(
+            # View panel on the right
+            ui.div(
+                ui.layout_columns(
+                    ui.card(
+                        ui.card_header("Metrics Over Time"),
+                        output_widget("plot_sales_trend"),
+                    ),
+                    col_widths=(12,),
+                ),
+                ui.layout_columns(
+                    ui.card(
+                        ui.card_header("Sales Mix Over Time"),
+                        ui.panel_conditional(
+                            "input.input_agg === 'day'",
                             ui.div(
-                                ui.help_text(
-                                    "For the best results, use the slider to view a smaller date range (e.g. one month)."
+                                ui.div(
+                                    ui.help_text(
+                                        "For the best results, use the slider to view a smaller date range (e.g. one month)."
+                                    ),
+                                    style="margin-bottom: 8px;",
                                 ),
-                                style="margin-bottom: 8px;",
-                            ),
-                            ui.div(
-                                ui.input_slider(
-                                    "input_slider_range",
-                                    "",
-                                    min=pd.to_datetime("2019-01-01"),
-                                    max=pd.to_datetime("2019-03-31"),
-                                    value=[
-                                        pd.to_datetime("2019-02-01"),
-                                        pd.to_datetime("2019-02-28"),
-                                    ],
-                                    ticks=True,
-                                    step=1,
-                                    time_format="%Y-%m-%d",
+                                ui.div(
+                                    ui.input_slider(
+                                        "input_slider_range",
+                                        "",
+                                        min=pd.to_datetime("2019-01-01"),
+                                        max=pd.to_datetime("2019-03-31"),
+                                        value=[
+                                            pd.to_datetime("2019-02-01"),
+                                            pd.to_datetime("2019-02-28"),
+                                        ],
+                                        ticks=True,
+                                        step=1,
+                                        time_format="%Y-%m-%d",
+                                    ),
+                                    style="margin-top: -20px; margin-bottom: -20px; padding-left: 40px;",
                                 ),
-                                style="margin-top: -20px; margin-bottom: -20px; padding-left: 40px;",
                             ),
                         ),
+                        output_widget("plot_sales_mix"),
+                        full_screen=True,
                     ),
-                    output_widget("plot_sales_mix"),
-                    full_screen=True,
+                    ui.card(
+                        ui.card_header("Ranked Sales"),
+                        ui.output_plot("plot_product_lines", height="200px"),
+                        full_screen=True,
+                    ),
+                    col_widths=(7, 5),
                 ),
-                ui.card(
-                    ui.card_header("Ranked Sales"),
-                    ui.output_plot("plot_product_lines", height="200px"),
-                    full_screen=True,
-                ),
-                col_widths=(7, 5),
             ),
-            # TODO: to be commented out before release
-            # ui.hr(),
-            # ui.layout_columns(
-            #     ui.card(
-            #         ui.card_header("df_filtered (debug)"),
-            #         ui.output_data_frame("tbl_filtered"),
-            #     ),
-            #     ui.card(
-            #         ui.card_header("df_filtered_product (debug)"),
-            #         ui.output_data_frame("tbl_filtered_product"),
-            #     ),
-            #     col_widths=(7, 5),
-            # ),
-            # ui.layout_columns(
-            #     ui.card(
-            #         ui.card_header("Inputs (debug)"),
-            #         ui.output_text_verbatim("debug_inputs"),
-            #     ),
-            #     col_widths=(12,),
-            # ),
         ),
-    ),
+        ),
+        # ── Tab 2: LLM Chat ───────────────────────────────────────────────────────
+        ui.nav_panel(
+            "LLM Chat",
+            ui.layout_sidebar(
+            qc.sidebar(title='Ask me anything about Walmart Sales:'),
+            ui.card(
+                ui.card_header(ui.output_text("chat_title")),
+                ui.output_data_frame("chat_table"),
+                fill=True,
+            ),
+            fillable=True,
+            )  
+        )
+    )
 )
+
+
+
 
 
 ## Server
 def server(input, output, session):
+
+    # ── Tab 1: reactive calcs ─────────────────────────────────────────────────
     ## Reactive calcs
     @reactive.calc
     def df_filtered() -> pd.DataFrame:
@@ -473,6 +519,17 @@ def server(input, output, session):
             len(input.input_metrics()) == 0
         ):  # Used Claude.ai to help suggest ways to warn user to select at least one metric
             return ui.help_text("⚠️ Please select at least one metric.⚠️")
+        
+    # ── Tab 2: querychat ──────────────────────────────────────────────────────
+    qc_vals = qc.server()
+
+    @render.text
+    def chat_title():
+        return qc_vals.title() or "Walmart dataset"
+
+    @render.data_frame
+    def chat_table():
+        return qc_vals.df()
 
     # ## Debug outputs (to be removed before release)
     # @output
