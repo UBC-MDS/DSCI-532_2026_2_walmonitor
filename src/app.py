@@ -6,7 +6,7 @@ import warnings
 from datetime import date
 from pathlib import Path
 
-from shiny import App, ui, render, reactive
+from shiny import App, ui, render, reactive, req
 from shinywidgets import render_altair, output_widget
 
 import chatlas as ctl
@@ -45,9 +45,10 @@ BRANCH_CHOICES = {
 
 DEFAULT_BRANCH = "all"
 
-DEFAULT_START = date(2019, 1, 1)
+DEFAULT_START = date(2019, 2, 1)
 DEFAULT_END = date(2019, 3, 30)
-
+DEFAULT_START_MIN = date(2019, 1, 1)
+DEFAULT_END_MAX = date(2019, 3, 30)
 
 ## Load data
 DATA_PATH = (
@@ -58,6 +59,13 @@ DATA_RAW["Date"] = pd.to_datetime(DATA_RAW["Date"])
 BASE_COLS = ["Date", "Branch", "Product line"] + list(METRIC_CHOICES.keys())
 DATA_BASE = DATA_RAW[BASE_COLS].copy()  # Crop unused columns
 
+# Module level (outside server)
+BASELINE_MONTH = DATA_BASE[
+    (DATA_BASE["Date"] >= pd.Timestamp(date(2019, 1, 1))) &
+    (DATA_BASE["Date"] < pd.Timestamp(date(2019, 2, 1)))
+]
+
+BASELINE_LABEL = BASELINE_MONTH["Date"].max().strftime("%b %Y")
 
 ## Helper functions
 def to_snake_case(name: str) -> str:
@@ -99,8 +107,8 @@ def make_line_plot(df_wide, metrics) -> alt.Chart:
                 "date:T",
                 axis=alt.Axis(
                     labelAngle=0,
-                    format="%Y-%m-%d",
                     title="Date",
+                    format="%b %d",
                 ),
             ),
             y=alt.Y("value:Q", title=None),
@@ -113,6 +121,8 @@ def make_line_plot(df_wide, metrics) -> alt.Chart:
                     fillColor="white",
                     strokeColor="#ddd",
                     padding=6,
+                    labelFontSize=15,
+                    titleFontSize=15,
                 ),
             ),
             tooltip=[
@@ -162,12 +172,21 @@ def make_ranked_product_lines_bars(
     ax.set_xlabel(
         "Total Sales" if method == "sum" else "Average Sales",
         labelpad=10,  # <- adds padding under x-axis label
+        fontweight="bold"
     )
 
     # Give y tick labels some breathing room
     ax.tick_params(axis="y", pad=6)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
+
+    # Make the font of matplotlib look like the altair plots
+    plt.rcParams["font.family"] = "sans-serif"
+
+    # Match the font sizes visually to altair plots with size 15
+    ax.tick_params(axis='both', labelsize=10)
+    ax.xaxis.label.set_size(10)
+    ax.yaxis.label.set_size(10)
 
     left_margin = min(0.55, max(0.25, 0.18 + 0.012 * max_len))
     fig.subplots_adjust(left=left_margin, right=0.97, top=0.90, bottom=0.22)
@@ -235,7 +254,7 @@ app_ui = ui.page_fluid(
                     # Aggregation: day vs week
                     ui.input_radio_buttons(
                         "input_agg",
-                        "Aggregation",
+                        "Group By",
                         choices=AGG_CHOICES,
                         selected=DEFAULT_AGG,
                         inline=True,
@@ -243,7 +262,7 @@ app_ui = ui.page_fluid(
                     # Aggregation method: sum vs mean
                     ui.input_radio_buttons(
                         "input_agg_method",
-                        "Aggregation method",
+                        "Apply",
                         choices=METHOD_CHOICES,
                         selected=DEFAULT_METHOD,
                         inline=True,
@@ -254,8 +273,8 @@ app_ui = ui.page_fluid(
                         "Date range",
                         start=DEFAULT_START,
                         end=DEFAULT_END,
-                        min=DEFAULT_START,
-                        max=DEFAULT_END,
+                        min=DEFAULT_START_MIN,
+                        max=DEFAULT_END_MAX,
                     ),
                     # Branch dropdown
                     ui.input_select(
@@ -278,17 +297,28 @@ app_ui = ui.page_fluid(
                     width=320,
                 ),
             # View panel on the right
-            ui.div(
+            ui.div(ui.layout_columns(
+                    ui.value_box(f"Average Sales vs. {BASELINE_LABEL}", ui.output_ui("sales_change"),
+                                    height="130px"),
+                    ui.value_box("% of All-time Sales Shown", ui.output_ui("fraction_of_total_sales"),
+                                    height="130px"),
+                    ui.value_box("Total Sales Shown", ui.output_ui("total_sales_viewed"),
+                                 height="130px"),
+                    ui.value_box(ui.output_text("min_max_selected"), ui.output_ui("min_max_sales_viewed"),
+                                 height="130px"),             
+                    fill=False,
+                ),
                 ui.layout_columns(
                     ui.card(
-                        ui.card_header("Metrics Over Time"),
+                        ui.card_header(ui.tags.span(ui.output_text("selected_metrics"),
+                                                     style="font-size: 1.2rem;")),
                         output_widget("plot_sales_trend"),
                     ),
                     col_widths=(12,),
                 ),
                 ui.layout_columns(
                     ui.card(
-                        ui.card_header("Sales Mix Over Time"),
+                        ui.card_header(ui.tags.span("Sales Mix Over Time", style="font-size: 1.2rem;")),
                         ui.panel_conditional(
                             "input.input_agg === 'day'",
                             ui.div(
@@ -311,8 +341,9 @@ app_ui = ui.page_fluid(
                                         ticks=True,
                                         step=1,
                                         time_format="%Y-%m-%d",
+                                        width="95%"
                                     ),
-                                    style="margin-top: -20px; margin-bottom: -20px; padding-left: 40px;",
+                                    style="margin-top: -5px; margin-bottom: -20px; padding-left: 40px; font-size: 1.2rem;",
                                 ),
                             ),
                         ),
@@ -320,7 +351,7 @@ app_ui = ui.page_fluid(
                         full_screen=True,
                     ),
                     ui.card(
-                        ui.card_header("Ranked Sales"),
+                        ui.card_header("Ranked Sales", style="font-size: 1.2rem;"),
                         ui.output_plot("plot_product_lines", height="200px"),
                         full_screen=True,
                     ),
@@ -389,6 +420,40 @@ def server(input, output, session):
 
         # Filter columns by metrics
         metrics = list(input.input_metrics() or [])
+        if not metrics:
+            return pd.DataFrame(columns=["date"])
+
+        df = df[["Date"] + metrics].copy()
+
+        # Aggregate by day/week and sum/mean
+        if input.input_agg() == "day":
+            df["date"] = df["Date"].dt.floor("D")
+        else:
+            df["date"] = (
+                df["Date"].dt.to_period("W-SAT").dt.start_time
+            )  # Week starting Sunday
+
+        out = df.groupby("date", as_index=False)[metrics].agg(input.input_agg_method())
+        out = out.sort_values("date").reset_index(drop=True)
+        out = out.rename(columns={c: to_snake_case(c) for c in out.columns})
+
+        return out
+    
+    @reactive.calc
+    def df_rel_baseline() -> pd.DataFrame:
+        """
+        Apply filters and aggregations to the baseline month data,
+        returning the processed DataFrame.
+        """
+        df = BASELINE_MONTH
+
+        # Filter rows by branch
+        branch = input.input_branch()
+        if branch != "all":
+            df = df[df["Branch"] == branch]
+
+        # Filter columns by metrics
+        metrics = DEFAULT_METRICS
         if not metrics:
             return pd.DataFrame(columns=["date"])
 
@@ -500,7 +565,8 @@ def server(input, output, session):
             .mark_area()
             .encode(
                 y=alt.Y("total", title="Total sales"),
-                x=alt.X("time:T", title="Date"),
+                x=alt.X("time:T", title="Date",
+                        axis=alt.Axis(labelAngle=0)),
                 color=alt.Color(
                     input_comparison,
                     title=input.input_comparison(),
@@ -508,20 +574,23 @@ def server(input, output, session):
                     legend=alt.Legend(
                         orient="bottom",
                         direction="horizontal",
-                        columns=3
+                        columns=3,
+                        labelFontSize=15,
+                        titleFontSize=15,
                     ),
                 ),
                 tooltip=[input_comparison, "time", "total"],
             )
         )
 
-        return chart
+        return chart.configure_axis(titleFontSize=15,labelFontSize=15)
 
     @output
     @render_altair
     def plot_sales_trend():  # top plot
         """Render the time-series line plot based on the filtered data."""
-        return make_line_plot(df_filtered(), input.input_metrics())
+        return make_line_plot(df_filtered(), input.input_metrics()
+                              ).configure_axis(titleFontSize=15,labelFontSize=15)
 
     @output
     @render.ui
@@ -587,6 +656,100 @@ def server(input, output, session):
         if df is None:
             df = pd.DataFrame()
         yield df.to_csv(index=False)
+
+    @render.text
+    def sales_change():
+        
+        req("Total" in input.input_metrics())
+
+        total_sales_change_percent = 100*(df_filtered()['total'].mean(
+            )/df_rel_baseline()['total'].mean()-1)
+        
+        color = "green" if total_sales_change_percent >= 0 else "red"
+        change_symbol = '+'if total_sales_change_percent >= 0 else ""
+        html_string = ui.HTML(f'<span style="color:{color}; font-weight:bold;">{change_symbol}{
+            total_sales_change_percent:,.2f}%</span>')
+
+        return html_string
+
+    @render.text
+    def fraction_of_total_sales():
+
+        req("Total" in input.input_metrics())
+
+        all_time_sales = DATA_BASE['Total'].sum()
+
+        frac_total_sales = 100* df_filtered()['total'].sum()/all_time_sales
+
+        html_string = ui.HTML(f'<span style="color:{'black'}; font-weight:bold;">{
+            frac_total_sales:,.0f}%</span>')
+
+        return html_string
+
+    @render.text
+    def total_sales_viewed():
+        
+        req("Total" in input.input_metrics())
+
+        total_sales = df_filtered()['total'].sum()
+
+        html_string = ui.HTML(f'<span style="color:{'black'}; font-weight:bold;">{'$'}{
+            total_sales:,.0f}</span>')
+
+        return html_string
+    
+    @render.text
+    def selected_metrics():
+        
+        if len(input.input_metrics()) < 1:
+            title_string = 'No Metrics Selected, Please Select One or More Metrics'
+        else:
+            metric_lst = [str(METRIC_CHOICES[metric]) for metric in input.input_metrics()]
+            title_string = ', '.join(metric_lst)+ ' Over Time - ' + BRANCH_CHOICES[input.input_branch()]
+
+        return title_string
+
+    @render.text
+    def min_max_sales_viewed():
+
+        if  len(input.input_metrics()) < 1:
+            return ui.HTML(f'<span style="color:{'black'}; font-weight:bold; font-size:1.2rem;">Select A Metric</span>')
+
+        if 'Total' in  input.input_metrics():
+            metric = to_snake_case('total')
+        else:
+            metric = to_snake_case(input.input_metrics()[0])
+
+        min_sales = min(df_filtered()[metric])
+        max_sales = max(df_filtered()[metric])
+
+        if metric == 'gross_margin_percentage':
+            unit_pre = ''
+            unit_suf = '%'
+        else:
+            unit_pre = '$'
+            unit_suf = ''
+        
+        html_string = ui.HTML(f'<span style="color:{'black'}; font-weight:bold; font-size:1.2rem;">Max: {unit_pre}{max_sales:,.0f}{unit_suf}</span>'
+                                f'<span style="color:{'black'}; font-weight:bold; font-size:1rem;">Min: {unit_pre}{min_sales:,.0f}{unit_suf}</span>')
+
+        return html_string
+    
+    @render.text
+    def min_max_selected():
+
+        if  len(input.input_metrics()) < 1:
+            return "Max/Min of Key Metrics"
+        
+        if 'Total' in  input.input_metrics():
+            metric = 'Total'
+        else:
+            metric = input.input_metrics()[0]
+
+        label = METRIC_CHOICES[metric]
+
+        return f"{label} Shown"
+
     # ## Debug outputs (to be removed before release)
     # @output
     # @render.data_frame

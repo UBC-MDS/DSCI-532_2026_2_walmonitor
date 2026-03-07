@@ -4,7 +4,6 @@ channels:
 dependencies:
   - python>=3.11
   - pandas=3.0.0
-  - shiny=1.5.1
   - shinywidgets=0.7.1
   - matplotlib=3.10.8
   - altair-all=5.5.0
@@ -16,3 +15,4 @@ dependencies:
     - querychat==0.5.1 
     - chatlas==0.15.2 
     - python-dotenv==1.2.2
+    - shiny==1.5.1
