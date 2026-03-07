@@ -8,8 +8,11 @@ dependencies:
   - shinywidgets=0.7.1
   - matplotlib=3.10.8
   - altair-all=5.5.0
-  - vegafusion=1.6.9
+  - vegafusion=2.0.3 
   - nb_conda_kernels=2.5.1 
   - pip=26.0.1
   - pip:
-    - altair_ally==0.1.1 
+    - altair_ally==0.1.1
+    - querychat==0.5.1 
+    - chatlas==0.15.2 
+    - python-dotenv==1.2.2
