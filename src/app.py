@@ -6,7 +6,7 @@ import warnings
 from datetime import date
 from pathlib import Path
 
-from shiny import App, ui, render, reactive
+from shiny import App, ui, render, reactive, req
 from shinywidgets import render_altair, output_widget
 
 import chatlas as ctl
@@ -304,7 +304,7 @@ app_ui = ui.page_fluid(
                                     height="130px"),
                     ui.value_box("Total Sales Shown", ui.output_ui("total_sales_viewed"),
                                  height="130px"),
-                    ui.value_box("Max/Min of Sales Shown", ui.output_ui("min_max_sales_viewed"),
+                    ui.value_box(ui.output_text("min_max_selected"), ui.output_ui("min_max_sales_viewed"),
                                  height="130px"),             
                     fill=False,
                 ),
@@ -660,6 +660,8 @@ def server(input, output, session):
     @render.text
     def sales_change():
         
+        req("Total" in input.input_metrics())
+
         total_sales_change_percent = 100*(df_filtered()['total'].mean(
             )/df_rel_baseline()['total'].mean()-1)
         
@@ -673,6 +675,8 @@ def server(input, output, session):
     @render.text
     def fraction_of_total_sales():
 
+        req("Total" in input.input_metrics())
+
         all_time_sales = DATA_BASE['Total'].sum()
 
         frac_total_sales = 100* df_filtered()['total'].sum()/all_time_sales
@@ -685,6 +689,8 @@ def server(input, output, session):
     @render.text
     def total_sales_viewed():
         
+        req("Total" in input.input_metrics())
+
         total_sales = df_filtered()['total'].sum()
 
         html_string = ui.HTML(f'<span style="color:{'black'}; font-weight:bold;">{'$'}{
@@ -705,13 +711,44 @@ def server(input, output, session):
 
     @render.text
     def min_max_sales_viewed():
-        min_sales = min(df_filtered()['total'])
-        max_sales = max(df_filtered()['total'])
-        
-        html_string = ui.HTML(f'<span style="color:{'green'}; font-weight:bold; font-size:1.2rem;">${max_sales:,.0f}</span>'
-                                f'<span style="color:{'red'}; font-weight:bold; font-size:1rem;">${min_sales:,.0f}</span>')
 
-        return html_string 
+        if  len(input.input_metrics()) < 1:
+            return ui.HTML(f'<span style="color:{'black'}; font-weight:bold; font-size:1.2rem;">Select A Metric</span>')
+
+        if 'Total' in  input.input_metrics():
+            metric = to_snake_case('total')
+        else:
+            metric = to_snake_case(input.input_metrics()[0])
+
+        min_sales = min(df_filtered()[metric])
+        max_sales = max(df_filtered()[metric])
+
+        if metric == 'gross_margin_percentage':
+            unit_pre = ''
+            unit_suf = '%'
+        else:
+            unit_pre = '$'
+            unit_suf = ''
+        
+        html_string = ui.HTML(f'<span style="color:{'green'}; font-weight:bold; font-size:1.2rem;">{unit_pre}{max_sales:,.0f}{unit_suf}</span>'
+                                f'<span style="color:{'red'}; font-weight:bold; font-size:1rem;">{unit_pre}{min_sales:,.0f}{unit_suf}</span>')
+
+        return html_string
+    
+    @render.text
+    def min_max_selected():
+
+        if  len(input.input_metrics()) < 1:
+            return "Max/Min of Key Metrics"
+        
+        if 'Total' in  input.input_metrics():
+            metric = 'Total'
+        else:
+            metric = input.input_metrics()[0]
+
+        label = METRIC_CHOICES[metric]
+
+        return f"Max/Min of {label}"
 
     # ## Debug outputs (to be removed before release)
     # @output
