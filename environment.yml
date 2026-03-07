@@ -12,4 +12,7 @@ dependencies:
   - nb_conda_kernels=2.5.1 
   - pip=26.0.1
   - pip:
-    - altair_ally==0.1.1 
+    - altair_ally==0.1.1
+    - querychat==0.5.1 
+    - chatlas==0.15.2 
+    - python-dotenv==1.2.2
