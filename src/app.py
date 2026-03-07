@@ -181,10 +181,10 @@ qc = QueryChat(
     client=ctl.ChatGithub(model="gpt-4.1-mini"),
     greeting="""👋 Ask me anything about the Walmart Sales.
 
-        * <span class="suggestion">What city generates the highest gross income on average?</span>
-        * <span class="suggestion">How do sales prices vary over the given time period from January to March?</span>
-        * <span class="suggestion">What is the relationship between unit price and quantity sold?</span>
-        * <span class="suggestion">What is the average total sales per transaction?</span>
+* <span class="suggestion">What city generates the highest gross income on average?</span>
+* <span class="suggestion">What is the time with the highest average transaction amount?</span>
+* <span class="suggestion">What is the relationship between unit price and quantity sold?</span>
+* <span class="suggestion">What is the average total sales per transaction?</span>
     """ ,
     data_description="""
         Walmart Sales Data (1000 Transactions).
