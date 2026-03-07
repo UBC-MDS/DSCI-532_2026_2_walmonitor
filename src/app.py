@@ -254,7 +254,7 @@ app_ui = ui.page_fluid(
                     # Aggregation: day vs week
                     ui.input_radio_buttons(
                         "input_agg",
-                        "Aggregation",
+                        "Group By",
                         choices=AGG_CHOICES,
                         selected=DEFAULT_AGG,
                         inline=True,
@@ -262,7 +262,7 @@ app_ui = ui.page_fluid(
                     # Aggregation method: sum vs mean
                     ui.input_radio_buttons(
                         "input_agg_method",
-                        "Aggregation method",
+                        "Apply",
                         choices=METHOD_CHOICES,
                         selected=DEFAULT_METHOD,
                         inline=True,
