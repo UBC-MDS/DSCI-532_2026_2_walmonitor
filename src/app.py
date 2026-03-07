@@ -182,7 +182,7 @@ qc = QueryChat(
     greeting="""👋 Ask me anything about the Walmart Sales.
 
 * <span class="suggestion">What city generates the highest gross income on average?</span>
-* <span class="suggestion">What is the time with the highest average transaction amount?</span>
+* <span class="suggestion">Show me the top 10 times with the highest average total sales.</span>
 * <span class="suggestion">What is the relationship between unit price and quantity sold?</span>
 * <span class="suggestion">What is the average total sales per transaction?</span>
     """ ,
@@ -333,7 +333,7 @@ app_ui = ui.page_fluid(
         ui.nav_panel(
             "LLM Chat",
             ui.layout_sidebar(
-            qc.sidebar(title='Ask any questions:'),
+            qc.sidebar(title='Ask me anything about Walmart Sales:'),
             ui.card(
                 ui.card_header(ui.output_text("chat_title")),
                 ui.output_data_frame("chat_table"),
