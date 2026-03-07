@@ -730,8 +730,8 @@ def server(input, output, session):
             unit_pre = '$'
             unit_suf = ''
         
-        html_string = ui.HTML(f'<span style="color:{'green'}; font-weight:bold; font-size:1.2rem;">{unit_pre}{max_sales:,.0f}{unit_suf}</span>'
-                                f'<span style="color:{'red'}; font-weight:bold; font-size:1rem;">{unit_pre}{min_sales:,.0f}{unit_suf}</span>')
+        html_string = ui.HTML(f'<span style="color:{'black'}; font-weight:bold; font-size:1.2rem;">Max: {unit_pre}{max_sales:,.0f}{unit_suf}</span>'
+                                f'<span style="color:{'black'}; font-weight:bold; font-size:1rem;">Min: {unit_pre}{min_sales:,.0f}{unit_suf}</span>')
 
         return html_string
     
@@ -748,7 +748,7 @@ def server(input, output, session):
 
         label = METRIC_CHOICES[metric]
 
-        return f"Max/Min of {label}"
+        return f"{label} Shown"
 
     # ## Debug outputs (to be removed before release)
     # @output
