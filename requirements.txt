@@ -1,10 +1,10 @@
-shiny==1.4.0
+shiny==1.5.1
 shinywidgets==0.7.1
 pandas==3.0.0
 matplotlib==3.10.8
 altair==5.5.0
 altair_ally==0.1.1
-vegafusion[embed]==2.0.3
-querychat==0.5.1 
-chatlas==0.15.2 
+vegafusion[embed]==1.6.9
+querychat==0.5.1
+chatlas==0.15.2
 python-dotenv==1.2.2
