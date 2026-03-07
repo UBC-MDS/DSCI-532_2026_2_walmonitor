@@ -4,7 +4,7 @@ pandas==3.0.0
 matplotlib==3.10.8
 altair==5.5.0
 altair_ally==0.1.1
-vegafusion[embed]==1.6.9
+vegafusion[embed]==2.0.3
 querychat==0.5.1 
 chatlas==0.15.2 
 python-dotenv==1.2.2
