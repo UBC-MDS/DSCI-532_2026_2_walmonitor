@@ -339,6 +339,20 @@ app_ui = ui.page_fluid(
                 ui.output_data_frame("chat_table"),
                 fill=True,
             ),
+            ui.layout_columns(
+                ui.card(
+                    ui.card_header("Sales by Product Line"),
+                    output_widget("chat_plot_bar"),
+                    full_screen=True,
+                ),
+                ui.card(
+                    ui.card_header("Sales Trend"),
+                    output_widget("chat_plot_trend"),
+                    full_screen=True,
+                ),
+                col_widths=(6, 6),
+            ),
+            ui.download_button("download_chat_data", "⬇️ Download Filtered Data as CSV"),
             fillable=True,
             )  
         )
@@ -530,7 +544,49 @@ def server(input, output, session):
     @render.data_frame
     def chat_table():
         return qc_vals.df()
+    
+    @render_altair
+    def chat_plot_bar():
+        df = qc_vals.df()
+        if df is None or df.empty or "Product line" not in df.columns or "Total" not in df.columns:
+            return alt.Chart(pd.DataFrame({"note": ["No data"]})).mark_text().encode(text="note:N")
+        summary = df.groupby("Product line", as_index=False)["Total"].sum().sort_values("Total", ascending=False)
+        return (
+            alt.Chart(summary)
+            .mark_bar()
+            .encode(
+                x=alt.X("Total:Q", title="Total Sales"),
+                y=alt.Y("Product line:N", sort="-x", title=""),
+                tooltip=["Product line", "Total"],
+            )
+            .properties(height=250, width="container")
+        )
 
+    @render_altair
+    def chat_plot_trend():
+        df = qc_vals.df()
+        if df is None or df.empty or "Date" not in df.columns or "Total" not in df.columns:
+            return alt.Chart(pd.DataFrame({"note": ["No data"]})).mark_text().encode(text="note:N")
+        df = df.copy()
+        df["Date"] = pd.to_datetime(df["Date"])
+        daily = df.groupby("Date", as_index=False)["Total"].sum()
+        return (
+            alt.Chart(daily)
+            .mark_line()
+            .encode(
+                x=alt.X("Date:T", title="Date"),
+                y=alt.Y("Total:Q", title="Total Sales"),
+                tooltip=["Date:T", "Total:Q"],
+            )
+            .properties(height=250, width="container")
+        )
+
+    @render.download(filename="filtered_data.csv")
+    def download_chat_data():
+        df = qc_vals.df()
+        if df is None:
+            df = pd.DataFrame()
+        yield df.to_csv(index=False)
     # ## Debug outputs (to be removed before release)
     # @output
     # @render.data_frame
