@@ -134,15 +134,6 @@ def make_line_plot(df_wide, metrics) -> alt.Chart:
         .properties(height=350, width="container")
     )
 
-    max_point = df_long.loc[[df_long["value"].idxmax()]]
-    min_point = df_long.loc[[df_long["value"].idxmin()]]
-
-    points = alt.Chart(pd.concat([max_point, min_point])).mark_point(
-        size=80, filled=True
-    ).encode(x="date:T", y="value:Q", color="metric_label:N")
-
-    chart = chart + points
-
     return chart
 
 
@@ -307,13 +298,13 @@ app_ui = ui.page_fluid(
                 ),
             # View panel on the right
             ui.div(ui.layout_columns(
-                    ui.value_box(f"Average Sales vs. {BASELINE_LABEL}", ui.output_ui("total_sales"),
+                    ui.value_box(f"Average Sales vs. {BASELINE_LABEL}", ui.output_ui("sales_change"),
                                     height="130px"),
-                    ui.value_box("Fraction of All-time Sales Viewed", ui.output_ui("fraction_of_total_sales"),
+                    ui.value_box("% of All-time Sales Shown", ui.output_ui("fraction_of_total_sales"),
                                     height="130px"),
-                    ui.value_box("Total Sales Viewed", ui.output_ui("total_sales_viewed"),
+                    ui.value_box("Total Sales Shown", ui.output_ui("total_sales_viewed"),
                                  height="130px"),
-                    ui.value_box("Min/Max Sales Viewed", ui.output_ui("min_max_sales_viewed"),
+                    ui.value_box("Max/Min of Sales Shown", ui.output_ui("min_max_sales_viewed"),
                                  height="130px"),             
                     fill=False,
                 ),
@@ -667,7 +658,7 @@ def server(input, output, session):
         yield df.to_csv(index=False)
 
     @render.text
-    def total_sales():
+    def sales_change():
         
         total_sales_change_percent = 100*(df_filtered()['total'].mean(
             )/df_rel_baseline()['total'].mean()-1)
@@ -712,7 +703,15 @@ def server(input, output, session):
 
         return title_string
 
-    
+    @render.text
+    def min_max_sales_viewed():
+        min_sales = min(df_filtered()['total'])
+        max_sales = max(df_filtered()['total'])
+        
+        html_string = ui.HTML(f'<span style="color:{'green'}; font-weight:bold; font-size:1.2rem;">${max_sales:,.0f}</span>'
+                                f'<span style="color:{'red'}; font-weight:bold; font-size:1rem;">${min_sales:,.0f}</span>')
+
+        return html_string 
 
     # ## Debug outputs (to be removed before release)
     # @output
