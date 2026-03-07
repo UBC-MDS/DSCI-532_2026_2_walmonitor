@@ -65,6 +65,8 @@ BASELINE_MONTH = DATA_BASE[
     (DATA_BASE["Date"] < pd.Timestamp(date(2019, 2, 1)))
 ]
 
+BASELINE_LABEL = BASELINE_MONTH["Date"].max().strftime("%b %Y")
+
 ## Helper functions
 def to_snake_case(name: str) -> str:
     """Convert a string to snake_case, suitable for column names."""
@@ -105,8 +107,8 @@ def make_line_plot(df_wide, metrics) -> alt.Chart:
                 "date:T",
                 axis=alt.Axis(
                     labelAngle=0,
-                    format="%Y-%m-%d",
                     title="Date",
+                    format="%b %d",
                 ),
             ),
             y=alt.Y("value:Q", title=None),
@@ -119,6 +121,8 @@ def make_line_plot(df_wide, metrics) -> alt.Chart:
                     fillColor="white",
                     strokeColor="#ddd",
                     padding=6,
+                    labelFontSize=15,
+                    titleFontSize=15,
                 ),
             ),
             tooltip=[
@@ -129,6 +133,15 @@ def make_line_plot(df_wide, metrics) -> alt.Chart:
         )
         .properties(height=350, width="container")
     )
+
+    max_point = df_long.loc[[df_long["value"].idxmax()]]
+    min_point = df_long.loc[[df_long["value"].idxmin()]]
+
+    points = alt.Chart(pd.concat([max_point, min_point])).mark_point(
+        size=80, filled=True
+    ).encode(x="date:T", y="value:Q", color="metric_label:N")
+
+    chart = chart + points
 
     return chart
 
@@ -168,12 +181,21 @@ def make_ranked_product_lines_bars(
     ax.set_xlabel(
         "Total Sales" if method == "sum" else "Average Sales",
         labelpad=10,  # <- adds padding under x-axis label
+        fontweight="bold"
     )
 
     # Give y tick labels some breathing room
     ax.tick_params(axis="y", pad=6)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
+
+    # Make the font of matplotlib look like the altair plots
+    plt.rcParams["font.family"] = "sans-serif"
+
+    # Match the font sizes visually to altair plots with size 15
+    ax.tick_params(axis='both', labelsize=10)
+    ax.xaxis.label.set_size(10)
+    ax.yaxis.label.set_size(10)
 
     left_margin = min(0.55, max(0.25, 0.18 + 0.012 * max_len))
     fig.subplots_adjust(left=left_margin, right=0.97, top=0.90, bottom=0.22)
@@ -285,21 +307,27 @@ app_ui = ui.page_fluid(
                 ),
             # View panel on the right
             ui.div(ui.layout_columns(
-                    ui.value_box("Average Sales vs. First Month", ui.output_ui("total_sales")),
-                    ui.value_box("Fraction of Total Sales Viewed", ui.output_ui("fraction_of_total_sales")),
-                    ui.value_box("Sales Across Selected Dates", ui.output_ui("total_sales_viewed")),
+                    ui.value_box(f"Average Sales vs. {BASELINE_LABEL}", ui.output_ui("total_sales"),
+                                    height="130px"),
+                    ui.value_box("Fraction of All-time Sales Viewed", ui.output_ui("fraction_of_total_sales"),
+                                    height="130px"),
+                    ui.value_box("Total Sales Viewed", ui.output_ui("total_sales_viewed"),
+                                 height="130px"),
+                    ui.value_box("Min/Max Sales Viewed", ui.output_ui("min_max_sales_viewed"),
+                                 height="130px"),             
                     fill=False,
                 ),
                 ui.layout_columns(
                     ui.card(
-                        ui.card_header("Metrics Over Time"),
+                        ui.card_header(ui.tags.span(ui.output_text("selected_metrics"),
+                                                     style="font-size: 1.2rem;")),
                         output_widget("plot_sales_trend"),
                     ),
                     col_widths=(12,),
                 ),
                 ui.layout_columns(
                     ui.card(
-                        ui.card_header("Sales Mix Over Time"),
+                        ui.card_header(ui.tags.span("Sales Mix Over Time", style="font-size: 1.2rem;")),
                         ui.panel_conditional(
                             "input.input_agg === 'day'",
                             ui.div(
@@ -322,8 +350,9 @@ app_ui = ui.page_fluid(
                                         ticks=True,
                                         step=1,
                                         time_format="%Y-%m-%d",
+                                        width="95%"
                                     ),
-                                    style="margin-top: -20px; margin-bottom: -20px; padding-left: 40px;",
+                                    style="margin-top: -5px; margin-bottom: -20px; padding-left: 40px; font-size: 1.2rem;",
                                 ),
                             ),
                         ),
@@ -331,7 +360,7 @@ app_ui = ui.page_fluid(
                         full_screen=True,
                     ),
                     ui.card(
-                        ui.card_header("Ranked Sales"),
+                        ui.card_header("Ranked Sales", style="font-size: 1.2rem;"),
                         ui.output_plot("plot_product_lines", height="200px"),
                         full_screen=True,
                     ),
@@ -545,7 +574,8 @@ def server(input, output, session):
             .mark_area()
             .encode(
                 y=alt.Y("total", title="Total sales"),
-                x=alt.X("time:T", title="Date"),
+                x=alt.X("time:T", title="Date",
+                        axis=alt.Axis(labelAngle=0)),
                 color=alt.Color(
                     input_comparison,
                     title=input.input_comparison(),
@@ -553,20 +583,23 @@ def server(input, output, session):
                     legend=alt.Legend(
                         orient="bottom",
                         direction="horizontal",
-                        columns=3
+                        columns=3,
+                        labelFontSize=15,
+                        titleFontSize=15,
                     ),
                 ),
                 tooltip=[input_comparison, "time", "total"],
             )
         )
 
-        return chart
+        return chart.configure_axis(titleFontSize=15,labelFontSize=15)
 
     @output
     @render_altair
     def plot_sales_trend():  # top plot
         """Render the time-series line plot based on the filtered data."""
-        return make_line_plot(df_filtered(), input.input_metrics())
+        return make_line_plot(df_filtered(), input.input_metrics()
+                              ).configure_axis(titleFontSize=15,labelFontSize=15)
 
     @output
     @render.ui
@@ -633,24 +666,16 @@ def server(input, output, session):
             df = pd.DataFrame()
         yield df.to_csv(index=False)
 
-    
-
     @render.text
     def total_sales():
         
-        
-
         total_sales_change_percent = 100*(df_filtered()['total'].mean(
             )/df_rel_baseline()['total'].mean()-1)
-        
-
         
         color = "green" if total_sales_change_percent >= 0 else "red"
         change_symbol = '+'if total_sales_change_percent >= 0 else ""
         html_string = ui.HTML(f'<span style="color:{color}; font-weight:bold;">{change_symbol}{
             total_sales_change_percent:,.2f}%</span>')
-
-        # print(f"{total_sales_change_percent:,.2f}%")
 
         return html_string
 
@@ -658,8 +683,6 @@ def server(input, output, session):
     def fraction_of_total_sales():
 
         all_time_sales = DATA_BASE['Total'].sum()
-
-        print(all_time_sales)
 
         frac_total_sales = 100* df_filtered()['total'].sum()/all_time_sales
 
@@ -673,13 +696,23 @@ def server(input, output, session):
         
         total_sales = df_filtered()['total'].sum()
 
-
-
         html_string = ui.HTML(f'<span style="color:{'black'}; font-weight:bold;">{'$'}{
             total_sales:,.0f}</span>')
 
         return html_string
+    
+    @render.text
+    def selected_metrics():
+        
+        if len(input.input_metrics()) < 1:
+            title_string = 'No Metrics Selected, Please Select One or More Metrics'
+        else:
+            metric_lst = [str(METRIC_CHOICES[metric]) for metric in input.input_metrics()]
+            title_string = ', '.join(metric_lst)+ ' Over Time - ' + BRANCH_CHOICES[input.input_branch()]
 
+        return title_string
+
+    
 
     # ## Debug outputs (to be removed before release)
     # @output
