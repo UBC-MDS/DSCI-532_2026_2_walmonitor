@@ -45,9 +45,10 @@ BRANCH_CHOICES = {
 
 DEFAULT_BRANCH = "all"
 
-DEFAULT_START = date(2019, 1, 1)
+DEFAULT_START = date(2019, 2, 1)
 DEFAULT_END = date(2019, 3, 30)
-
+DEFAULT_START_MIN = date(2019, 1, 1)
+DEFAULT_END_MAX = date(2019, 3, 30)
 
 ## Load data
 DATA_PATH = (
@@ -58,6 +59,11 @@ DATA_RAW["Date"] = pd.to_datetime(DATA_RAW["Date"])
 BASE_COLS = ["Date", "Branch", "Product line"] + list(METRIC_CHOICES.keys())
 DATA_BASE = DATA_RAW[BASE_COLS].copy()  # Crop unused columns
 
+# Module level (outside server)
+BASELINE_MONTH = DATA_BASE[
+    (DATA_BASE["Date"] >= pd.Timestamp(date(2019, 1, 1))) &
+    (DATA_BASE["Date"] < pd.Timestamp(date(2019, 2, 1)))
+]
 
 ## Helper functions
 def to_snake_case(name: str) -> str:
@@ -254,8 +260,8 @@ app_ui = ui.page_fluid(
                         "Date range",
                         start=DEFAULT_START,
                         end=DEFAULT_END,
-                        min=DEFAULT_START,
-                        max=DEFAULT_END,
+                        min=DEFAULT_START_MIN,
+                        max=DEFAULT_END_MAX,
                     ),
                     # Branch dropdown
                     ui.input_select(
@@ -278,7 +284,12 @@ app_ui = ui.page_fluid(
                     width=320,
                 ),
             # View panel on the right
-            ui.div(
+            ui.div(ui.layout_columns(
+                    ui.value_box("Average Sales vs. First Month", ui.output_ui("total_sales")),
+                    ui.value_box("Fraction of Total Sales Viewed", ui.output_ui("fraction_of_total_sales")),
+                    ui.value_box("Sales Across Selected Dates", ui.output_ui("total_sales_viewed")),
+                    fill=False,
+                ),
                 ui.layout_columns(
                     ui.card(
                         ui.card_header("Metrics Over Time"),
@@ -389,6 +400,40 @@ def server(input, output, session):
 
         # Filter columns by metrics
         metrics = list(input.input_metrics() or [])
+        if not metrics:
+            return pd.DataFrame(columns=["date"])
+
+        df = df[["Date"] + metrics].copy()
+
+        # Aggregate by day/week and sum/mean
+        if input.input_agg() == "day":
+            df["date"] = df["Date"].dt.floor("D")
+        else:
+            df["date"] = (
+                df["Date"].dt.to_period("W-SAT").dt.start_time
+            )  # Week starting Sunday
+
+        out = df.groupby("date", as_index=False)[metrics].agg(input.input_agg_method())
+        out = out.sort_values("date").reset_index(drop=True)
+        out = out.rename(columns={c: to_snake_case(c) for c in out.columns})
+
+        return out
+    
+    @reactive.calc
+    def df_rel_baseline() -> pd.DataFrame:
+        """
+        Apply filters and aggregations to the baseline month data,
+        returning the processed DataFrame.
+        """
+        df = BASELINE_MONTH
+
+        # Filter rows by branch
+        branch = input.input_branch()
+        if branch != "all":
+            df = df[df["Branch"] == branch]
+
+        # Filter columns by metrics
+        metrics = DEFAULT_METRICS
         if not metrics:
             return pd.DataFrame(columns=["date"])
 
@@ -587,6 +632,55 @@ def server(input, output, session):
         if df is None:
             df = pd.DataFrame()
         yield df.to_csv(index=False)
+
+    
+
+    @render.text
+    def total_sales():
+        
+        
+
+        total_sales_change_percent = 100*(df_filtered()['total'].mean(
+            )/df_rel_baseline()['total'].mean()-1)
+        
+
+        
+        color = "green" if total_sales_change_percent >= 0 else "red"
+        change_symbol = '+'if total_sales_change_percent >= 0 else ""
+        html_string = ui.HTML(f'<span style="color:{color}; font-weight:bold;">{change_symbol}{
+            total_sales_change_percent:,.2f}%</span>')
+
+        # print(f"{total_sales_change_percent:,.2f}%")
+
+        return html_string
+
+    @render.text
+    def fraction_of_total_sales():
+
+        all_time_sales = DATA_BASE['Total'].sum()
+
+        print(all_time_sales)
+
+        frac_total_sales = 100* df_filtered()['total'].sum()/all_time_sales
+
+        html_string = ui.HTML(f'<span style="color:{'black'}; font-weight:bold;">{
+            frac_total_sales:,.0f}%</span>')
+
+        return html_string
+
+    @render.text
+    def total_sales_viewed():
+        
+        total_sales = df_filtered()['total'].sum()
+
+
+
+        html_string = ui.HTML(f'<span style="color:{'black'}; font-weight:bold;">{'$'}{
+            total_sales:,.0f}</span>')
+
+        return html_string
+
+
     # ## Debug outputs (to be removed before release)
     # @output
     # @render.data_frame
