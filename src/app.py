@@ -232,7 +232,7 @@ qc = QueryChat(
 ## App interface
 app_ui = ui.page_fluid(
     ui.div(
-        ui.h1("Walmonitor 0.2.0"),
+        ui.h1("Walmonitor 0.3.0"),
         style="margin-top: 24px;",
     ),
     ui.navset_tab(
