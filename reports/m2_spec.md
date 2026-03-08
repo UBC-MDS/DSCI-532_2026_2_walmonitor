@@ -23,7 +23,7 @@
 | `df_filtered_product` | Reactive calc | `@reactive.calc` | `input_metrics`, `input_agg`, `input_agg_method`, `input_date_range`, `input_branch`,`input_comparison` | #2, #3 |
 | `plot_sales_trend` | Output | `@render_altair` | `df_filtered` | #1 |
 | `plot_sales_mix` | Output | `@render_altair` | `df_filtered_product`, `input_comparison`, `input_slider_range` | #2 |
-| `plot_product_lines` | Output | `@render.plot` | `df_filtered_product`, `input_comparison` | #3 |
+| `plot_product_lines` | Output | `@render_altair` | `df_filtered_product`, `input_comparison` | #3 |
 
 ## Reactivity Diagram
 
@@ -55,7 +55,7 @@ flowchart LR
 
 ## Calculation Details
 
-The dashboard consists of two reactive calculations `df_filtered` and `df_filtered_product`, that take any user input changes to automatically update the plotted outputs on the dashboard in real time. Each reactive calculation depends on user inputs which can be modified in the left-hand dashboard panel and each reactive calculation produces a different modified DataFrame, which are then consumed by `altair` and `matplotlib.pyplot` plots. These inputs allow the user to change which sales metrics are displayed, the aggregation method used per period, the examined date range and whether the metrics are displayed for a single branch or for all the branches combined.
+The dashboard consists of two reactive calculations `df_filtered` and `df_filtered_product`, that take any user input changes to automatically update the plotted outputs on the dashboard in real time. Each reactive calculation depends on user inputs which can be modified in the left-hand dashboard panel and each reactive calculation produces a different modified DataFrame, which are then consumed by `altair` charts. These inputs allow the user to change which sales metrics are displayed, the aggregation method used per period, the examined date range and whether the metrics are displayed for a single branch or for all the branches combined.
 
 ### `df_filtered`
 
@@ -70,4 +70,4 @@ The dashboard consists of two reactive calculations `df_filtered` and `df_filter
 - Transformation: filter the raw dataset by date range, selected metrics, chosen aggregation method, aggregation period and selected branches in a way compatible with the stacked area and ranked bar plots.
 - Outputs:
   - `plot_sales_mix`: An Altair chart of the stacked area over time displayed in the bottom left of the dashboard.
-  - `plot_product_lines`: A Matplotlib figure of the ranked bars displayed in the bottom right of the dashboard
+  - `plot_product_lines`: An Altair chart of the ranked bars displayed in the bottom right of the dashboard

@@ -1,6 +1,5 @@
 import re
 import pandas as pd
-import matplotlib.pyplot as plt
 import altair as alt
 import warnings
 from datetime import date
@@ -10,7 +9,6 @@ from shiny import App, ui, render, reactive, req
 from shinywidgets import render_altair, output_widget
 
 import chatlas as ctl
-import pandas as pd
 from dotenv import load_dotenv
 from querychat import QueryChat
 
@@ -18,6 +16,21 @@ load_dotenv()
 
 alt.data_transformers.enable("vegafusion")
 warnings.filterwarnings("ignore", module="altair")
+
+
+## Colour palette
+TAB10_HEX = [
+    "#1f77b4",
+    "#ff7f0e",
+    "#2ca02c",
+    "#d62728",
+    "#9467bd",
+    "#8c564b",
+    "#e377c2",
+    "#7f7f7f",
+    "#bcbd22",
+    "#17becf",
+]
 
 
 ## Input choices and defaults
@@ -86,6 +99,14 @@ def tooltip_title(name: str) -> str:
     return str(name).replace("_", " ").capitalize()
 
 
+def make_comparison_color_scale(df: pd.DataFrame, comparison: str) -> alt.Scale:
+    """Build a stable color scale so category colors stay consistent across charts."""
+    base_values = sorted([x for x in df[comparison].dropna().unique() if x != "Other"])
+    domain = base_values + (["Other"] if "Other" in df[comparison].values else [])
+    range_ = TAB10_HEX[: len(base_values)] + (["#b3b3b3"] if "Other" in domain else [])
+    return alt.Scale(domain=domain, range=range_)
+
+
 def make_line_plot(df_wide, metrics) -> alt.Chart:
     if df_wide.empty or not metrics:
         return (
@@ -146,8 +167,11 @@ def make_line_plot(df_wide, metrics) -> alt.Chart:
 
 
 def make_ranked_product_lines_bars(
-    df, top_n=6, method="sum", comparison="product_line"
-):
+    df: pd.DataFrame,
+    top_n: int = 6,
+    method: str = "sum",
+    comparison: str = "product_line",
+) -> alt.Chart:
     rank = (
         df.groupby(comparison, dropna=False)["total"]
         .agg("sum" if method == "sum" else "mean")
@@ -158,48 +182,44 @@ def make_ranked_product_lines_bars(
     if len(rank) > top_n:
         top = pd.concat([top, pd.Series({"Other": rank.iloc[top_n:].sum()})])
 
-    labels = top.index.tolist()[::-1]
-    values = top.values[::-1]
-
-    palette = list(plt.get_cmap("tab10").colors)
-    # consistent mapping by alphabetical order (stable across filters)
-    base_lines = sorted([x for x in df[comparison].dropna().unique() if x != "Other"])
-    color_map = {name: palette[i % len(palette)] for i, name in enumerate(base_lines)}
-    color_map["Other"] = (0.7, 0.7, 0.7)  # neutral gray for "Other"
-
-    bar_colors = [color_map.get(lbl, palette[0]) for lbl in labels]
-
-    max_len = max((len(str(x)) for x in labels), default=10)
-    fig_w = 7.8
-    fig_h = max(3.2, 0.45 * len(labels) + 1.2)
-    fig, ax = plt.subplots(figsize=(fig_w, fig_h))
-
-    ax.barh(labels, values, color=bar_colors)
-
-    ax.set_ylabel("")
-    ax.set_xlabel(
-        "Total Sales" if method == "sum" else "Average Sales",
-        labelpad=10,  # <- adds padding under x-axis label
-        fontweight="bold",
+    plot_df = (
+        top.rename_axis(comparison)
+        .reset_index(name="total")
+        .sort_values("total", ascending=False)
     )
 
-    # Give y tick labels some breathing room
-    ax.tick_params(axis="y", pad=6)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
+    color_scale = make_comparison_color_scale(plot_df, comparison)
 
-    # Make the font of matplotlib look like the altair plots
-    plt.rcParams["font.family"] = "sans-serif"
-
-    # Match the font sizes visually to altair plots with size 15
-    ax.tick_params(axis="both", labelsize=10)
-    ax.xaxis.label.set_size(10)
-    ax.yaxis.label.set_size(10)
-
-    left_margin = min(0.55, max(0.25, 0.18 + 0.012 * max_len))
-    fig.subplots_adjust(left=left_margin, right=0.97, top=0.90, bottom=0.22)
-
-    return fig
+    return (
+        alt.Chart(plot_df)
+        .mark_bar()
+        .encode(
+            x=alt.X(
+                "total:Q",
+                title="Total Sales" if method == "sum" else "Average Sales",
+            ),
+            y=alt.Y(
+                f"{comparison}:N",
+                sort="-x",
+                title="",
+            ),
+            color=alt.Color(
+                f"{comparison}:N",
+                title=tooltip_title(comparison),
+                scale=color_scale,
+                legend=None,
+            ),
+            tooltip=[
+                alt.Tooltip(f"{comparison}:N", title=tooltip_title(comparison)),
+                alt.Tooltip(
+                    "total:Q",
+                    title="Total sales" if method == "sum" else "Average sales",
+                    format=",.2f",
+                ),
+            ],
+        )
+        .properties(height=450, width="container")
+    )
 
 
 ## Querychat
@@ -389,7 +409,10 @@ app_ui = ui.page_fluid(
                         ),
                         ui.card(
                             ui.card_header("Ranked Sales", style="font-size: 1.2rem;"),
-                            ui.output_plot("plot_product_lines", height="200px"),
+                            ui.div(
+                                output_widget("plot_product_lines"),
+                                style="height: 200px;",
+                            ),
                             full_screen=True,
                         ),
                         col_widths=(7, 5),
@@ -557,14 +580,14 @@ def server(input, output, session):
         )
 
     ## Outputs
-    @render.plot
+    @render_altair
     def plot_product_lines():  # bottom right plot
         """Render the ranked product lines plot based on the filtered data."""
         return make_ranked_product_lines_bars(
             df_filtered_product(),
             method=input.input_agg_method(),
             comparison=to_snake_case(input.input_comparison()),
-        )
+        ).configure_axis(titleFontSize=15, labelFontSize=15)
 
     @render_altair
     def plot_sales_mix():  # bottom left plot
@@ -572,40 +595,27 @@ def server(input, output, session):
         This function uses user input to determine what to compare in the plot (Product line, Customer type, Payment type, Gender)
         and what date range to choose from if the values are aggregated by day.
         """
-        # Tab10 Hex Colors to match matplotlib tab10
-        tab10_hex = [
-            "#1f77b4",
-            "#ff7f0e",
-            "#2ca02c",
-            "#d62728",
-            "#9467bd",
-            "#8c564b",
-            "#e377c2",
-            "#7f7f7f",
-            "#bcbd22",
-            "#17becf",
-        ]
-
         data = df_filtered_product()
+
         input_comparison = to_snake_case(input.input_comparison())
 
-        # If user chooses to aggregate by day
         if input.input_agg() == "day":
             start_date = pd.to_datetime(input.input_slider_range()[0])
             end_date = pd.to_datetime(input.input_slider_range()[1])
             data = data[data["time"].between(start_date, end_date, inclusive="both")]
 
-        # Plotting the stack plot
+        color_scale = make_comparison_color_scale(data, input_comparison)
+
         chart = (
             alt.Chart(data)
             .mark_area()
             .encode(
-                y=alt.Y("total", title="Total sales"),
+                y=alt.Y("total:Q", title="Total Sales"),
                 x=alt.X("time:T", title="Date", axis=alt.Axis(labelAngle=0)),
                 color=alt.Color(
-                    input_comparison,
+                    f"{input_comparison}:N",
                     title=input.input_comparison(),
-                    scale=alt.Scale(range=tab10_hex),
+                    scale=color_scale,
                     legend=alt.Legend(
                         orient="bottom",
                         direction="horizontal",
@@ -616,10 +626,10 @@ def server(input, output, session):
                 ),
                 tooltip=[
                     alt.Tooltip(
-                        input_comparison, title=tooltip_title(input_comparison)
+                        f"{input_comparison}:N", title=tooltip_title(input_comparison)
                     ),
                     alt.Tooltip("time:T", title="Date"),
-                    alt.Tooltip("total:Q", title="Total", format=",.2f"),
+                    alt.Tooltip("total:Q", title="Total sales", format=",.2f"),
                 ],
             )
         )
