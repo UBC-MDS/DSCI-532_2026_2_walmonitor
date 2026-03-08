@@ -79,6 +79,13 @@ def to_snake_case(name: str) -> str:
     return s
 
 
+def tooltip_title(name: str) -> str:
+    """Convert snake_case field names to sentence case for tooltips."""
+    if str(name) == "time":
+        return "Date"
+    return str(name).replace("_", " ").capitalize()
+
+
 def make_line_plot(df_wide, metrics) -> alt.Chart:
     if df_wide.empty or not metrics:
         return (
@@ -231,6 +238,15 @@ qc = QueryChat(
 
 ## App interface
 app_ui = ui.page_fluid(
+    ui.tags.style("""
+    .vg-tooltip {
+        font-size: 16px !important;
+        padding: 10px 12px !important;
+    }
+    .vg-tooltip table {
+        font-size: 16px !important;
+    }
+"""),
     ui.div(
         ui.h1("Walmonitor 0.3.0"),
         style="margin-top: 24px;",
@@ -385,7 +401,7 @@ app_ui = ui.page_fluid(
         ui.nav_panel(
             "LLM Chat",
             ui.layout_sidebar(
-                qc.sidebar(title="Ask me anything about Walmart Sales:"),
+                qc.sidebar(title="Ask me anything about Walmart sales:"),
                 ui.card(
                     ui.card_header(ui.output_text("chat_title")),
                     ui.output_data_frame("chat_table"),
@@ -598,7 +614,13 @@ def server(input, output, session):
                         titleFontSize=15,
                     ),
                 ),
-                tooltip=[input_comparison, "time", "total"],
+                tooltip=[
+                    alt.Tooltip(
+                        input_comparison, title=tooltip_title(input_comparison)
+                    ),
+                    alt.Tooltip("time:T", title="Date"),
+                    alt.Tooltip("total:Q", title="Total", format=",.2f"),
+                ],
             )
         )
 
