@@ -227,7 +227,7 @@ qc = QueryChat(
     DATA_RAW.copy(),
     "walmart",
     client=ctl.ChatGithub(model="gpt-4.1-mini"),
-    greeting="""👋 Ask me anything about the Walmart Sales.
+    greeting="""👋 Ask me anything about the Walmart sales.
 
 * <span class="suggestion">What city generates the highest gross income on average?</span>
 * <span class="suggestion">Show me the top 10 times with the highest average total sales.</span>
@@ -259,17 +259,25 @@ qc = QueryChat(
 ## App interface
 app_ui = ui.page_fluid(
     ui.tags.style("""
-    .vg-tooltip {
-        font-size: 16px !important;
-        padding: 10px 12px !important;
-    }
-    .vg-tooltip table {
-        font-size: 16px !important;
-    }
-"""),
+        .dashboard-sidebar h4,
+        .dashboard-sidebar .control-label,
+        .dashboard-sidebar .form-label,
+        .dashboard-sidebar .shiny-input-checkboxgroup > label,
+        .dashboard-sidebar .shiny-input-radiogroup > label,
+        .dashboard-sidebar .shiny-input-container > label {
+            font-size: 1.2rem !important;
+        }
+        .vg-tooltip {
+            font-size: 16px !important;
+            padding: 10px 12px !important;
+        }
+        .vg-tooltip table {
+            font-size: 16px !important;
+        }
+    """),
     ui.div(
         ui.h1("Walmonitor 0.3.0"),
-        style="margin-top: 24px;",
+        style="margin-top: 24px; margin-bottom: 24px; margin-left: 24px;",
     ),
     ui.navset_tab(
         # ── Tab 1: Dashboard ───────────────────────────────────────────────────────
@@ -331,6 +339,7 @@ app_ui = ui.page_fluid(
                         selected="Product line",
                     ),
                     width=320,
+                    class_="dashboard-sidebar",
                 ),
                 # View panel on the right
                 ui.div(
@@ -424,7 +433,7 @@ app_ui = ui.page_fluid(
         ui.nav_panel(
             "LLM Chat",
             ui.layout_sidebar(
-                qc.sidebar(title="Ask me anything about Walmart sales:"),
+                qc.sidebar(),
                 ui.card(
                     ui.card_header(ui.output_text("chat_title")),
                     ui.output_data_frame("chat_table"),
@@ -441,7 +450,8 @@ app_ui = ui.page_fluid(
                         output_widget("chat_plot_trend"),
                         full_screen=True,
                     ),
-                    col_widths=(6, 6),
+                    col_widths=(5, 7),
+                    fill=False,
                 ),
                 ui.download_button(
                     "download_chat_data", "⬇️ Download Filtered Data as CSV"
@@ -693,7 +703,7 @@ def server(input, output, session):
                 y=alt.Y("Product line:N", sort="-x", title=""),
                 tooltip=["Product line", "Total"],
             )
-            .properties(height=250, width="container")
+            .properties(height=280, width="container")
         )
 
     @render_altair
@@ -721,7 +731,7 @@ def server(input, output, session):
                 y=alt.Y("Total:Q", title="Total Sales"),
                 tooltip=["Date:T", "Total:Q"],
             )
-            .properties(height=250, width="container")
+            .properties(height=280, width="container")
         )
 
     @render.download(filename="filtered_data.csv")
