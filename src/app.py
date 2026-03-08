@@ -768,8 +768,7 @@ def server(input, output, session):
         frac_total_sales = 100 * df_filtered()["total"].sum() / all_time_sales
 
         html_string = ui.HTML(
-            f'<span style="color:{"black"}; font-weight:bold;">{
-                frac_total_sales:,.0f}%</span>'
+            f'<span style="color:{"black"}; font-weight:bold;">{frac_total_sales:,.0f}%</span>'
         )
 
         return html_string
@@ -782,8 +781,7 @@ def server(input, output, session):
         total_sales = df_filtered()["total"].sum()
 
         html_string = ui.HTML(
-            f'<span style="color:{"black"}; font-weight:bold;">{"$"}{
-                total_sales:,.0f}</span>'
+            f'<span style="color:{"black"}; font-weight:bold;">{"$"}{total_sales:,.0f}</span>'
         )
 
         return html_string
