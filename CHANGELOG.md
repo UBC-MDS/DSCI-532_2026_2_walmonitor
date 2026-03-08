@@ -27,7 +27,7 @@
 
 * The LLM chatbot interface was added to allow users to ask questions about the data and insights displayed on the dashboard. This feature was implemented using the `OpenAI` API. The chatbot interface is designed to provide users with a more interactive and engaging experience when exploring the dashboard.
 * The summary statistics cards were added to provide users with quick insights into key metrics such as comparison to a cutoff point, percentage of data shown, and the maximum and minimum metrics found in the filtered data. These cards are designed to be visually appealing and easy to read, allowing users to quickly grasp important information at a glance.
-* We explored some themes to improve the overall aesthetics of the dashboard, but found them not doing significantly better than the default `shiny` theme. We decided to keep the default theme for its simplicity and clean look for now. It may worth customizing our theme in the future or adding colours to some UI elements to make the dashboard more engaging.
+* We explored some themes to improve the overall aesthetics of the dashboard, but found them not doing significantly better than the default `shiny` theme. We decided to keep the default theme for its simplicity and clean look for now. It may be worth customizing our theme in the future or adding colours to some UI elements to make the dashboard more engaging.
 
 ## [0.2.0]
 
