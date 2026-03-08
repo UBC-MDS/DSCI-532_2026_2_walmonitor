@@ -102,7 +102,7 @@ def make_line_plot(df_wide, metrics) -> alt.Chart:
 
     chart = (
         alt.Chart(df_long)
-        .mark_line()
+        .mark_line(point=alt.OverlayMarkDef(size=90))
         .encode(
             x=alt.X(
                 "date:T",
