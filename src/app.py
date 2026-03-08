@@ -61,11 +61,12 @@ DATA_BASE = DATA_RAW[BASE_COLS].copy()  # Crop unused columns
 
 # Module level (outside server)
 BASELINE_MONTH = DATA_BASE[
-    (DATA_BASE["Date"] >= pd.Timestamp(date(2019, 1, 1))) &
-    (DATA_BASE["Date"] < pd.Timestamp(date(2019, 2, 1)))
+    (DATA_BASE["Date"] >= pd.Timestamp(date(2019, 1, 1)))
+    & (DATA_BASE["Date"] < pd.Timestamp(date(2019, 2, 1)))
 ]
 
 BASELINE_LABEL = BASELINE_MONTH["Date"].max().strftime("%b %Y")
+
 
 ## Helper functions
 def to_snake_case(name: str) -> str:
@@ -172,7 +173,7 @@ def make_ranked_product_lines_bars(
     ax.set_xlabel(
         "Total Sales" if method == "sum" else "Average Sales",
         labelpad=10,  # <- adds padding under x-axis label
-        fontweight="bold"
+        fontweight="bold",
     )
 
     # Give y tick labels some breathing room
@@ -184,7 +185,7 @@ def make_ranked_product_lines_bars(
     plt.rcParams["font.family"] = "sans-serif"
 
     # Match the font sizes visually to altair plots with size 15
-    ax.tick_params(axis='both', labelsize=10)
+    ax.tick_params(axis="both", labelsize=10)
     ax.xaxis.label.set_size(10)
     ax.yaxis.label.set_size(10)
 
@@ -192,6 +193,7 @@ def make_ranked_product_lines_bars(
     fig.subplots_adjust(left=left_margin, right=0.97, top=0.90, bottom=0.22)
 
     return fig
+
 
 ## Querychat
 qc = QueryChat(
@@ -204,7 +206,7 @@ qc = QueryChat(
 * <span class="suggestion">Show me the top 10 times with the highest average total sales.</span>
 * <span class="suggestion">What is the relationship between unit price and quantity sold?</span>
 * <span class="suggestion">What is the average total sales per transaction?</span>
-    """ ,
+    """,
     data_description="""
         Walmart Sales Data (1000 Transactions).
         - Invoice ID: Invoice of the sales made 
@@ -224,17 +226,15 @@ qc = QueryChat(
         - gross margin percentage : Gross margin percentage
         - gross income : Gross income
         - Rating : Rating
-        """
+        """,
 )
 
 ## App interface
 app_ui = ui.page_fluid(
-
     ui.div(
         ui.h1("Walmonitor 0.2.0"),
         style="margin-top: 24px;",
     ),
-    
     ui.navset_tab(
         # ── Tab 1: Dashboard ───────────────────────────────────────────────────────
         ui.nav_panel(
@@ -296,102 +296,122 @@ app_ui = ui.page_fluid(
                     ),
                     width=320,
                 ),
-            # View panel on the right
-            ui.div(ui.layout_columns(
-                    ui.value_box(f"Average Sales vs. {BASELINE_LABEL}", ui.output_ui("sales_change"),
-                                    height="130px"),
-                    ui.value_box("% of All-time Sales Shown", ui.output_ui("fraction_of_total_sales"),
-                                    height="130px"),
-                    ui.value_box("Total Sales Shown", ui.output_ui("total_sales_viewed"),
-                                 height="130px"),
-                    ui.value_box(ui.output_text("min_max_selected"), ui.output_ui("min_max_sales_viewed"),
-                                 height="130px"),             
-                    fill=False,
-                ),
-                ui.layout_columns(
-                    ui.card(
-                        ui.card_header(ui.tags.span(ui.output_text("selected_metrics"),
-                                                     style="font-size: 1.2rem;")),
-                        output_widget("plot_sales_trend"),
+                # View panel on the right
+                ui.div(
+                    ui.layout_columns(
+                        ui.value_box(
+                            f"Average Sales vs. {BASELINE_LABEL}",
+                            ui.output_ui("sales_change"),
+                            height="130px",
+                        ),
+                        ui.value_box(
+                            "% of All-time Sales Shown",
+                            ui.output_ui("fraction_of_total_sales"),
+                            height="130px",
+                        ),
+                        ui.value_box(
+                            "Total Sales Shown",
+                            ui.output_ui("total_sales_viewed"),
+                            height="130px",
+                        ),
+                        ui.value_box(
+                            ui.output_text("min_max_selected"),
+                            ui.output_ui("min_max_sales_viewed"),
+                            height="130px",
+                        ),
+                        fill=False,
                     ),
-                    col_widths=(12,),
-                ),
-                ui.layout_columns(
-                    ui.card(
-                        ui.card_header(ui.tags.span("Sales Mix Over Time", style="font-size: 1.2rem;")),
-                        ui.panel_conditional(
-                            "input.input_agg === 'day'",
-                            ui.div(
+                    ui.layout_columns(
+                        ui.card(
+                            ui.card_header(
+                                ui.tags.span(
+                                    ui.output_text("selected_metrics"),
+                                    style="font-size: 1.2rem;",
+                                )
+                            ),
+                            output_widget("plot_sales_trend"),
+                        ),
+                        col_widths=(12,),
+                    ),
+                    ui.layout_columns(
+                        ui.card(
+                            ui.card_header(
+                                ui.tags.span(
+                                    "Sales Mix Over Time", style="font-size: 1.2rem;"
+                                )
+                            ),
+                            ui.panel_conditional(
+                                "input.input_agg === 'day'",
                                 ui.div(
-                                    ui.help_text(
-                                        "For the best results, use the slider to view a smaller date range (e.g. one month)."
+                                    ui.div(
+                                        ui.help_text(
+                                            "For the best results, use the slider to view a smaller date range (e.g. one month)."
+                                        ),
+                                        style="margin-bottom: 8px;",
                                     ),
-                                    style="margin-bottom: 8px;",
-                                ),
-                                ui.div(
-                                    ui.input_slider(
-                                        "input_slider_range",
-                                        "",
-                                        min=pd.to_datetime("2019-01-01"),
-                                        max=pd.to_datetime("2019-03-31"),
-                                        value=[
-                                            pd.to_datetime("2019-02-01"),
-                                            pd.to_datetime("2019-02-28"),
-                                        ],
-                                        ticks=True,
-                                        step=1,
-                                        time_format="%Y-%m-%d",
-                                        width="95%"
+                                    ui.div(
+                                        ui.input_slider(
+                                            "input_slider_range",
+                                            "",
+                                            min=pd.to_datetime("2019-01-01"),
+                                            max=pd.to_datetime("2019-03-31"),
+                                            value=[
+                                                pd.to_datetime("2019-02-01"),
+                                                pd.to_datetime("2019-02-28"),
+                                            ],
+                                            ticks=True,
+                                            step=1,
+                                            time_format="%Y-%m-%d",
+                                            width="95%",
+                                        ),
+                                        style="margin-top: -5px; margin-bottom: -20px; padding-left: 40px; font-size: 1.2rem;",
                                     ),
-                                    style="margin-top: -5px; margin-bottom: -20px; padding-left: 40px; font-size: 1.2rem;",
                                 ),
                             ),
+                            output_widget("plot_sales_mix"),
+                            full_screen=True,
                         ),
-                        output_widget("plot_sales_mix"),
-                        full_screen=True,
+                        ui.card(
+                            ui.card_header("Ranked Sales", style="font-size: 1.2rem;"),
+                            ui.output_plot("plot_product_lines", height="200px"),
+                            full_screen=True,
+                        ),
+                        col_widths=(7, 5),
                     ),
-                    ui.card(
-                        ui.card_header("Ranked Sales", style="font-size: 1.2rem;"),
-                        ui.output_plot("plot_product_lines", height="200px"),
-                        full_screen=True,
-                    ),
-                    col_widths=(7, 5),
                 ),
             ),
-        ),
         ),
         # ── Tab 2: LLM Chat ───────────────────────────────────────────────────────
         ui.nav_panel(
             "LLM Chat",
             ui.layout_sidebar(
-            qc.sidebar(title='Ask me anything about Walmart Sales:'),
-            ui.card(
-                ui.card_header(ui.output_text("chat_title")),
-                ui.output_data_frame("chat_table"),
-                fill=True,
-            ),
-            ui.layout_columns(
+                qc.sidebar(title="Ask me anything about Walmart Sales:"),
                 ui.card(
-                    ui.card_header("Sales by Product Line"),
-                    output_widget("chat_plot_bar"),
-                    full_screen=True,
+                    ui.card_header(ui.output_text("chat_title")),
+                    ui.output_data_frame("chat_table"),
+                    fill=True,
                 ),
-                ui.card(
-                    ui.card_header("Sales Trend"),
-                    output_widget("chat_plot_trend"),
-                    full_screen=True,
+                ui.layout_columns(
+                    ui.card(
+                        ui.card_header("Sales by Product Line"),
+                        output_widget("chat_plot_bar"),
+                        full_screen=True,
+                    ),
+                    ui.card(
+                        ui.card_header("Sales Trend"),
+                        output_widget("chat_plot_trend"),
+                        full_screen=True,
+                    ),
+                    col_widths=(6, 6),
                 ),
-                col_widths=(6, 6),
+                ui.download_button(
+                    "download_chat_data", "⬇️ Download Filtered Data as CSV"
+                ),
+                fillable=True,
             ),
-            ui.download_button("download_chat_data", "⬇️ Download Filtered Data as CSV"),
-            fillable=True,
-            )  
-        )
-    )
+        ),
+    ),
 )
-
-
-
 
 
 ## Server
@@ -438,7 +458,7 @@ def server(input, output, session):
         out = out.rename(columns={c: to_snake_case(c) for c in out.columns})
 
         return out
-    
+
     @reactive.calc
     def df_rel_baseline() -> pd.DataFrame:
         """
@@ -565,8 +585,7 @@ def server(input, output, session):
             .mark_area()
             .encode(
                 y=alt.Y("total", title="Total sales"),
-                x=alt.X("time:T", title="Date",
-                        axis=alt.Axis(labelAngle=0)),
+                x=alt.X("time:T", title="Date", axis=alt.Axis(labelAngle=0)),
                 color=alt.Color(
                     input_comparison,
                     title=input.input_comparison(),
@@ -583,14 +602,15 @@ def server(input, output, session):
             )
         )
 
-        return chart.configure_axis(titleFontSize=15,labelFontSize=15)
+        return chart.configure_axis(titleFontSize=15, labelFontSize=15)
 
     @output
     @render_altair
     def plot_sales_trend():  # top plot
         """Render the time-series line plot based on the filtered data."""
-        return make_line_plot(df_filtered(), input.input_metrics()
-                              ).configure_axis(titleFontSize=15,labelFontSize=15)
+        return make_line_plot(df_filtered(), input.input_metrics()).configure_axis(
+            titleFontSize=15, labelFontSize=15
+        )
 
     @output
     @render.ui
@@ -602,7 +622,7 @@ def server(input, output, session):
             len(input.input_metrics()) == 0
         ):  # Used Claude.ai to help suggest ways to warn user to select at least one metric
             return ui.help_text("⚠️ Please select at least one metric.⚠️")
-        
+
     # ── Tab 2: querychat ──────────────────────────────────────────────────────
     qc_vals = qc.server()
 
@@ -613,13 +633,26 @@ def server(input, output, session):
     @render.data_frame
     def chat_table():
         return qc_vals.df()
-    
+
     @render_altair
     def chat_plot_bar():
         df = qc_vals.df()
-        if df is None or df.empty or "Product line" not in df.columns or "Total" not in df.columns:
-            return alt.Chart(pd.DataFrame({"note": ["No data"]})).mark_text().encode(text="note:N")
-        summary = df.groupby("Product line", as_index=False)["Total"].sum().sort_values("Total", ascending=False)
+        if (
+            df is None
+            or df.empty
+            or "Product line" not in df.columns
+            or "Total" not in df.columns
+        ):
+            return (
+                alt.Chart(pd.DataFrame({"note": ["No data"]}))
+                .mark_text()
+                .encode(text="note:N")
+            )
+        summary = (
+            df.groupby("Product line", as_index=False)["Total"]
+            .sum()
+            .sort_values("Total", ascending=False)
+        )
         return (
             alt.Chart(summary)
             .mark_bar()
@@ -634,8 +667,17 @@ def server(input, output, session):
     @render_altair
     def chat_plot_trend():
         df = qc_vals.df()
-        if df is None or df.empty or "Date" not in df.columns or "Total" not in df.columns:
-            return alt.Chart(pd.DataFrame({"note": ["No data"]})).mark_text().encode(text="note:N")
+        if (
+            df is None
+            or df.empty
+            or "Date" not in df.columns
+            or "Total" not in df.columns
+        ):
+            return (
+                alt.Chart(pd.DataFrame({"note": ["No data"]}))
+                .mark_text()
+                .encode(text="note:N")
+            )
         df = df.copy()
         df["Date"] = pd.to_datetime(df["Date"])
         daily = df.groupby("Date", as_index=False)["Total"].sum()
@@ -659,16 +701,19 @@ def server(input, output, session):
 
     @render.text
     def sales_change():
-        
+
         req("Total" in input.input_metrics())
 
-        total_sales_change_percent = 100*(df_filtered()['total'].mean(
-            )/df_rel_baseline()['total'].mean()-1)
-        
+        total_sales_change_percent = 100 * (
+            df_filtered()["total"].mean() / df_rel_baseline()["total"].mean() - 1
+        )
+
         color = "green" if total_sales_change_percent >= 0 else "red"
-        change_symbol = '+'if total_sales_change_percent >= 0 else ""
-        html_string = ui.HTML(f'<span style="color:{color}; font-weight:bold;">{change_symbol}{
-            total_sales_change_percent:,.2f}%</span>')
+        change_symbol = "+" if total_sales_change_percent >= 0 else ""
+        html_string = ui.HTML(
+            f'<span style="color:{color}; font-weight:bold;">{change_symbol}{
+                total_sales_change_percent:,.2f}%</span>'
+        )
 
         return html_string
 
@@ -677,72 +722,86 @@ def server(input, output, session):
 
         req("Total" in input.input_metrics())
 
-        all_time_sales = DATA_BASE['Total'].sum()
+        all_time_sales = DATA_BASE["Total"].sum()
 
-        frac_total_sales = 100* df_filtered()['total'].sum()/all_time_sales
+        frac_total_sales = 100 * df_filtered()["total"].sum() / all_time_sales
 
-        html_string = ui.HTML(f'<span style="color:{'black'}; font-weight:bold;">{
-            frac_total_sales:,.0f}%</span>')
+        html_string = ui.HTML(
+            f'<span style="color:{"black"}; font-weight:bold;">{
+                frac_total_sales:,.0f}%</span>'
+        )
 
         return html_string
 
     @render.text
     def total_sales_viewed():
-        
+
         req("Total" in input.input_metrics())
 
-        total_sales = df_filtered()['total'].sum()
+        total_sales = df_filtered()["total"].sum()
 
-        html_string = ui.HTML(f'<span style="color:{'black'}; font-weight:bold;">{'$'}{
-            total_sales:,.0f}</span>')
+        html_string = ui.HTML(
+            f'<span style="color:{"black"}; font-weight:bold;">{"$"}{
+                total_sales:,.0f}</span>'
+        )
 
         return html_string
-    
+
     @render.text
     def selected_metrics():
-        
+
         if len(input.input_metrics()) < 1:
-            title_string = 'No Metrics Selected, Please Select One or More Metrics'
+            title_string = "No Metrics Selected, Please Select One or More Metrics"
         else:
-            metric_lst = [str(METRIC_CHOICES[metric]) for metric in input.input_metrics()]
-            title_string = ', '.join(metric_lst)+ ' Over Time - ' + BRANCH_CHOICES[input.input_branch()]
+            metric_lst = [
+                str(METRIC_CHOICES[metric]) for metric in input.input_metrics()
+            ]
+            title_string = (
+                ", ".join(metric_lst)
+                + " Over Time - "
+                + BRANCH_CHOICES[input.input_branch()]
+            )
 
         return title_string
 
     @render.text
     def min_max_sales_viewed():
 
-        if  len(input.input_metrics()) < 1:
-            return ui.HTML(f'<span style="color:{'black'}; font-weight:bold; font-size:1.2rem;">Select A Metric</span>')
+        if len(input.input_metrics()) < 1:
+            return ui.HTML(
+                f'<span style="color:{"black"}; font-weight:bold; font-size:1.2rem;">Select A Metric</span>'
+            )
 
-        if 'Total' in  input.input_metrics():
-            metric = to_snake_case('total')
+        if "Total" in input.input_metrics():
+            metric = to_snake_case("total")
         else:
             metric = to_snake_case(input.input_metrics()[0])
 
         min_sales = min(df_filtered()[metric])
         max_sales = max(df_filtered()[metric])
 
-        if metric == 'gross_margin_percentage':
-            unit_pre = ''
-            unit_suf = '%'
+        if metric == "gross_margin_percentage":
+            unit_pre = ""
+            unit_suf = "%"
         else:
-            unit_pre = '$'
-            unit_suf = ''
-        
-        html_string = ui.HTML(f'<span style="color:{'black'}; font-weight:bold; font-size:1.2rem;">Max: {unit_pre}{max_sales:,.0f}{unit_suf}</span>'
-                                f'<span style="color:{'black'}; font-weight:bold; font-size:1rem;">Min: {unit_pre}{min_sales:,.0f}{unit_suf}</span>')
+            unit_pre = "$"
+            unit_suf = ""
+
+        html_string = ui.HTML(
+            f'<span style="color:{"black"}; font-weight:bold; font-size:1.2rem;">Max: {unit_pre}{max_sales:,.0f}{unit_suf}</span>'
+            f'<span style="color:{"black"}; font-weight:bold; font-size:1rem;">Min: {unit_pre}{min_sales:,.0f}{unit_suf}</span>'
+        )
 
         return html_string
-    
+
     @render.text
     def min_max_selected():
 
-        if  len(input.input_metrics()) < 1:
+        if len(input.input_metrics()) < 1:
             return "Max/Min of Key Metrics"
-        
-        if 'Total' in  input.input_metrics():
-            metric = 'Total'
+
+        if "Total" in input.input_metrics():
+            metric = "Total"
         else:
             metric = input.input_metrics()[0]
 
