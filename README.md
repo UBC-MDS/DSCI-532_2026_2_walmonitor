@@ -71,8 +71,9 @@ Large language models (LLMs) were used to assist the development of this project
 
 | Model | Usage | Last Accessed |
 | --- | --- | --- |
-| [GitHub Copilot](https://github.com/features/copilot) | Pull request review, code fix, style consistency | February 2026 |
+| [GitHub Copilot](https://github.com/features/copilot) | Pull request review, code fix, style consistency | March 2026 |
 | [GPT-5.2](https://openai.com/index/introducing-gpt-5-2/) | Dashboard sketch generation | February 2026 |
+| [GPT-4.1 mini](https://openai.com/index/gpt-4-1/) | Chatbot integration | March 2026 |
 
 ## Copyright
 
