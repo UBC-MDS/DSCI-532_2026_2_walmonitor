@@ -753,8 +753,7 @@ def server(input, output, session):
         color = "green" if total_sales_change_percent >= 0 else "red"
         change_symbol = "+" if total_sales_change_percent >= 0 else ""
         html_string = ui.HTML(
-            f'<span style="color:{color}; font-weight:bold;">{change_symbol}{
-                total_sales_change_percent:,.2f}%</span>'
+            f'<span style="color:{color}; font-weight:bold;">{change_symbol}{total_sales_change_percent:,.2f}%</span>'
         )
 
         return html_string
