@@ -2,6 +2,8 @@ import re
 import pandas as pd
 import altair as alt
 import warnings
+import os
+import duckdb
 from datetime import date
 from pathlib import Path
 
@@ -67,6 +69,9 @@ DEFAULT_END_MAX = date(2019, 3, 30)
 DATA_PATH = (
     Path(__file__).resolve().parents[1] / "data" / "raw" / "walmart_sales_data.csv"
 )
+
+PROCESSED_PATH = 'data/processed/walmart_sales_data.parquet'
+
 DATA_RAW = pd.read_csv(DATA_PATH)
 DATA_RAW["Date"] = pd.to_datetime(DATA_RAW["Date"])
 BASE_COLS = ["Date", "Branch", "Product line"] + list(METRIC_CHOICES.keys())
@@ -82,6 +87,22 @@ BASELINE_LABEL = BASELINE_MONTH["Date"].max().strftime("%b %Y")
 
 
 ## Helper functions
+
+# One-time parquet of data, apply to_snake_case
+def parq_data(input_path: str, output_path: str):
+
+    df = pd.read_csv(input_path)
+    
+    if not os.path.isdir(os.path.dirname(output_path)):
+        os.mkdir(os.path.dirname(output_path))
+
+    df.to_parquet(output_path)
+    
+parq_data(input_path=DATA_PATH, output_path=PROCESSED_PATH)
+
+DATA_PARQ = pd.read_parquet(PROCESSED_PATH)
+DATA_PARQ["Date"] = pd.to_datetime(DATA_PARQ["Date"])
+
 def to_snake_case(name: str) -> str:
     """Convert a string to snake_case, suitable for column names."""
     s = str(name).strip().lower()
