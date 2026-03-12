@@ -2,6 +2,10 @@ import re
 import pandas as pd
 import altair as alt
 import warnings
+import os
+import duckdb
+import ibis
+from ibis import _  
 from datetime import date
 from pathlib import Path
 
@@ -67,6 +71,9 @@ DEFAULT_END_MAX = date(2019, 3, 30)
 DATA_PATH = (
     Path(__file__).resolve().parents[1] / "data" / "raw" / "walmart_sales_data.csv"
 )
+
+PROCESSED_PATH = 'data/processed/walmart_sales_data.parquet'
+
 DATA_RAW = pd.read_csv(DATA_PATH)
 DATA_RAW["Date"] = pd.to_datetime(DATA_RAW["Date"])
 BASE_COLS = ["Date", "Branch", "Product line"] + list(METRIC_CHOICES.keys())
@@ -91,6 +98,30 @@ def to_snake_case(name: str) -> str:
     s = re.sub(r"_+", "_", s).strip("_")
     return s
 
+# One-time parquet of data 
+def parq_data(input_path: str, output_path: str) -> None:
+
+    if not os.path.isdir(os.path.dirname(output_path)):
+        
+        os.mkdir(os.path.dirname(output_path))
+
+        df = pd.read_csv(input_path)
+        
+        df = df.rename(columns={c: to_snake_case(c) for c in df.columns})
+        
+        df.to_parquet(output_path)
+
+def connect_db(processed_path: str):
+    
+    con = ibis.duckdb.connect()  
+    
+    df_ref = con.read_parquet(processed_path)
+
+    return df_ref
+
+parq_data(input_path=DATA_PATH, output_path=PROCESSED_PATH)
+
+DATA_REF = connect_db(processed_path=PROCESSED_PATH)
 
 def tooltip_title(name: str) -> str:
     """Convert snake_case field names to sentence case for tooltips."""

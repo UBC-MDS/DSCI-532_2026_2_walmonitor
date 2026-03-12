@@ -8,6 +8,10 @@
 | 2   | As the Operations manager, I want to see which product lines are gaining/losing importance, as well as how sales are spread across payment methods and customer characteristics (like gender, membership, etc.), so I can detect structural shifts and react with inventory/promo focus.| 🔄 Revised     | Added sales metric mix over time across multiple toggleable categories to make the dashboard more informative to the user beyond just the product lines.|
 | 3   | As the Operations manager, I want to identify the top product lines, payment methods and customer characteristics over the entire analyzed time period, and whether the rankings differ by sales vs gross income so I know what to prioritize in the annual report.|  🔄 Revised   | Expanded the set of ranked categories for sales metrics to include other categories than just product line to compliment the sales  mix over time chart and user story 2 output, as well as provided high-level sales insight for the entire examined period of time.|
 
+## Database
+- Reactive calculations now rely on the walmart data in parquet format and a ibis/duckdb connection (as of release 0.4.0).
+- Dataframe calculations described below are lazily evaluated based on the database reference rather than the csv data.
+
 ## Component Inventory
 
 | ID | Type | Shiny widget / renderer | Depends on | User story |
