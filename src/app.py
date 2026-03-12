@@ -72,6 +72,7 @@ DATA_RAW["Date"] = pd.to_datetime(DATA_RAW["Date"])
 BASE_COLS = ["Date", "Branch", "Product line"] + list(METRIC_CHOICES.keys())
 DATA_BASE = DATA_RAW[BASE_COLS].copy()  # Crop unused columns
 
+
 # Module level (outside server)
 BASELINE_MONTH = DATA_BASE[
     (DATA_BASE["Date"] >= pd.Timestamp(date(2019, 1, 1)))
@@ -681,8 +682,8 @@ def server(input, output, session):
         if (
             df is None
             or df.empty
-            or "Product line" not in df.columns
-            or "Total" not in df.columns
+            or "product_line" not in df.columns
+            or "total" not in df.columns
         ):
             return (
                 alt.Chart(pd.DataFrame({"note": ["No data"]}))
@@ -690,17 +691,17 @@ def server(input, output, session):
                 .encode(text="note:N")
             )
         summary = (
-            df.groupby("Product line", as_index=False)["Total"]
+            df.groupby("product_line", as_index=False)["total"]
             .sum()
-            .sort_values("Total", ascending=False)
+            .sort_values("total", ascending=False)
         )
         return (
             alt.Chart(summary)
             .mark_bar()
             .encode(
-                x=alt.X("Total:Q", title="Total Sales"),
-                y=alt.Y("Product line:N", sort="-x", title=""),
-                tooltip=["Product line", "Total"],
+                x=alt.X("total:Q", title="Total Sales"),
+                y=alt.Y("product_line:N", sort="-x", title=""),
+                tooltip=["product_line", "total"],
             )
             .properties(height=280, width="container")
         )
@@ -711,8 +712,8 @@ def server(input, output, session):
         if (
             df is None
             or df.empty
-            or "Date" not in df.columns
-            or "Total" not in df.columns
+            or "date" not in df.columns
+            or "total" not in df.columns
         ):
             return (
                 alt.Chart(pd.DataFrame({"note": ["No data"]}))
@@ -720,15 +721,15 @@ def server(input, output, session):
                 .encode(text="note:N")
             )
         df = df.copy()
-        df["Date"] = pd.to_datetime(df["Date"])
-        daily = df.groupby("Date", as_index=False)["Total"].sum()
+        df["date"] = pd.to_datetime(df["date"])
+        daily = df.groupby("date", as_index=False)["total"].sum()
         return (
             alt.Chart(daily)
             .mark_line()
             .encode(
-                x=alt.X("Date:T", title="Date"),
-                y=alt.Y("Total:Q", title="Total Sales"),
-                tooltip=["Date:T", "Total:Q"],
+                x=alt.X("date:T", title="Date"),
+                y=alt.Y("total:Q", title="Total Sales"),
+                tooltip=["date:T", "total:Q"],
             )
             .properties(height=280, width="container")
         )
