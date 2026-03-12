@@ -4,6 +4,8 @@ import altair as alt
 import warnings
 import os
 import duckdb
+import ibis
+from ibis import _  
 from datetime import date
 from pathlib import Path
 
@@ -97,11 +99,18 @@ def parq_data(input_path: str, output_path: str) -> None:
         os.mkdir(os.path.dirname(output_path))
 
     df.to_parquet(output_path)
+
+def connect_db(processed_path: str):
     
+    con = ibis.duckdb.connect()  
+    
+    df_ref = con.read_parquet(processed_path)
+
+    return df_ref
+
 parq_data(input_path=DATA_PATH, output_path=PROCESSED_PATH)
 
-DATA_PARQ = pd.read_parquet(PROCESSED_PATH)
-DATA_PARQ["Date"] = pd.to_datetime(DATA_PARQ["Date"])
+DATA_REF = connect_db(processed_path=PROCESSED_PATH)
 
 def to_snake_case(name: str) -> str:
     """Convert a string to snake_case, suitable for column names."""
