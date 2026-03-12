@@ -18,6 +18,8 @@ from querychat import QueryChat
 
 load_dotenv()
 
+from helper_functions import to_snake_case, filter_data
+
 alt.data_transformers.enable("vegafusion")
 warnings.filterwarnings("ignore", module="altair")
 
@@ -87,16 +89,6 @@ BASELINE_MONTH = DATA_BASE[
 
 BASELINE_LABEL = BASELINE_MONTH["Date"].max().strftime("%b %Y")
 
-
-## Helper functions
-def to_snake_case(name: str) -> str:
-    """Convert a string to snake_case, suitable for column names."""
-    s = str(name).strip().lower()
-    s = s.replace("%", "pct")
-    s = re.sub(r"[^\w\s]", " ", s)
-    s = re.sub(r"\s+", "_", s)
-    s = re.sub(r"_+", "_", s).strip("_")
-    return s
 
 # One-time parquet of data 
 def parq_data(input_path: str, output_path: str) -> None:
@@ -573,48 +565,17 @@ def server(input, output, session):
 
         return out
 
-    def filter_data(start,end,branch,COMP_COL,agg_time,agg_method):
-        df = DATA_RAW
-
-        start_ts = pd.Timestamp(start)
-        end_ts = pd.Timestamp(end) + pd.Timedelta(days=1)
-        mask = (df["Date"] >= start_ts) & (df["Date"] < end_ts)
-
-    
-        if branch != "all":
-            mask &= df["Branch"] == branch
-
-        SALES_COL = "Total"
-
-        df = df.loc[mask, ["Date", COMP_COL, SALES_COL]].copy()
-
-        if agg_time == "day":
-            df["time"] = df["Date"].dt.floor("D")
-        else:
-            df["time"] = df["Date"].dt.to_period("W-SAT").dt.start_time
-
-        out = (
-            df.groupby(["time", COMP_COL], as_index=False)[SALES_COL]
-            .agg(agg_method)
-            .sort_values(["time", COMP_COL])
-            .reset_index(drop=True)
-        )
-
-        out = out.rename(columns={c: to_snake_case(c) for c in out.columns})
-
-        return out
-
 
     @reactive.calc
     def df_filtered_product() -> pd.DataFrame:
-
+        df = DATA_RAW
         start, end = input.input_date_range()
         branch = input.input_branch()
         COMP_COL = input.input_comparison()
         agg_time = input.input_agg()
         agg_method = input.input_agg_method()
 
-        return filter_data(start,end,branch,COMP_COL,agg_time,agg_method)
+        return filter_data(df,start,end,branch,COMP_COL,agg_time,agg_method)
 
     @reactive.effect
     def _update_dates():
