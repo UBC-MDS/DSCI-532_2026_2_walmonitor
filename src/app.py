@@ -88,8 +88,8 @@ BASELINE_LABEL = BASELINE_MONTH["Date"].max().strftime("%b %Y")
 
 ## Helper functions
 
-# One-time parquet of data, apply to_snake_case
-def parq_data(input_path: str, output_path: str):
+# One-time parquet of data 
+def parq_data(input_path: str, output_path: str) -> None:
 
     df = pd.read_csv(input_path)
     
