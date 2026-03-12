@@ -1,3 +1,9 @@
+"""
+Helper functions for the Walmonitor Dashboard
+- to_snake_case() : convert string to snake case
+- filter_data() : filter dataframe for given input
+"""
+
 import re
 import pandas as pd
 
@@ -12,6 +18,37 @@ def to_snake_case(name: str) -> str:
 
 
 def filter_data(df, start, end, branch, COMP_COL, agg_time, agg_method):
+    """Filter dataframe for given inputs
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The data to be filtered. Needs to contain the following columns : "Date", "Branch", "Total", 
+        and the chosen COMP_COL.
+    start : str
+        The start of the desired date range.
+    end : str
+        The end of the desired date range.
+    branch : str
+        The desired branch. Options include "A" (Yangon), "B" (Mandalay), "C" (Naypyitaw).
+    COMP_COL : str
+        The categories we want to compare. Options include "Product line", "Payment", "Gender", "Customer type".
+    agg_time : str
+        The period we want to group by. Options include "day", "week".
+    agg_method : str
+        The method we want to aggregate by. Options include "mean", "sum"
+
+    Returns
+    -------
+    pd.DataFrame
+        The filtered dataframe.
+
+    Examples
+    --------
+    >>> filter_data(df, pd.Datetime('2019-01-01'), pd.Datetime('2019-01-01'), 'A', 'Gender', 'day', 'mean')
+
+
+    """
     start_ts = pd.Timestamp(start)
     end_ts = pd.Timestamp(end) + pd.Timedelta(days=1)
     mask = (df["Date"] >= start_ts) & (df["Date"] < end_ts)
