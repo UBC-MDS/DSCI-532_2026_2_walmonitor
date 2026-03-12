@@ -573,32 +573,29 @@ def server(input, output, session):
 
         return out
 
-    @reactive.calc
-    def df_filtered_product() -> pd.DataFrame:
+    def filter_data(start,end,branch,COMP_COL,agg_time,agg_method):
         df = DATA_RAW
 
-        start, end = input.input_date_range()
         start_ts = pd.Timestamp(start)
         end_ts = pd.Timestamp(end) + pd.Timedelta(days=1)
         mask = (df["Date"] >= start_ts) & (df["Date"] < end_ts)
 
-        branch = input.input_branch()
+    
         if branch != "all":
             mask &= df["Branch"] == branch
 
-        COMP_COL = input.input_comparison()
         SALES_COL = "Total"
 
         df = df.loc[mask, ["Date", COMP_COL, SALES_COL]].copy()
 
-        if input.input_agg() == "day":
+        if agg_time == "day":
             df["time"] = df["Date"].dt.floor("D")
         else:
             df["time"] = df["Date"].dt.to_period("W-SAT").dt.start_time
 
         out = (
             df.groupby(["time", COMP_COL], as_index=False)[SALES_COL]
-            .agg(input.input_agg_method())
+            .agg(agg_method)
             .sort_values(["time", COMP_COL])
             .reset_index(drop=True)
         )
@@ -606,6 +603,18 @@ def server(input, output, session):
         out = out.rename(columns={c: to_snake_case(c) for c in out.columns})
 
         return out
+
+
+    @reactive.calc
+    def df_filtered_product() -> pd.DataFrame:
+
+        start, end = input.input_date_range()
+        branch = input.input_branch()
+        COMP_COL = input.input_comparison()
+        agg_time = input.input_agg()
+        agg_method = input.input_agg_method()
+
+        return filter_data(start,end,branch,COMP_COL,agg_time,agg_method)
 
     @reactive.effect
     def _update_dates():
