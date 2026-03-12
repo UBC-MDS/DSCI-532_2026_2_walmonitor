@@ -224,7 +224,7 @@ def make_ranked_product_lines_bars(
 
 ## Querychat
 qc = QueryChat(
-    DATA_RAW.copy(),
+    DATA_RAW.rename(columns={c: to_snake_case(c) for c in DATA_RAW.columns}),
     "walmart",
     client=ctl.ChatGithub(model="gpt-4.1-mini"),
     greeting="""👋 Ask me anything about the Walmart sales.
@@ -236,26 +236,25 @@ qc = QueryChat(
     """,
     data_description="""
         Walmart Sales Data (1000 Transactions).
-        - Invoice ID: Invoice of the sales made 
-        - Branch: Branch at which sales were made, 'A' (Yangon), 'B' (Mandalay), or 'C' (Naypyitaw)
-        - City: The location of the branch, 'Yangon', 'Mandalay', or 'Naypyitaw'
-        - Customer type: The type of the customer, 'Normal', or 'Member'
-        - Gender: Gender of the customer making purchase, 'Male', or 'Female'
-        - Product line: Product line of the product sold, 'Health and beauty', 'Electronic accessories', 'Home and lifestyle', 'Sports and travel', 'Food and beverages', or 'Fashion accessories'
-        - Unit price: The price of each product
-        - Quantity : The amount of the product sold
-        - Tax 5% : The amount of tax on the purchase
-        - Total : The total cost of the purchase
-        - Date : The date on which the purchase was made
-        - Time : The time at which the purchase was made
-        - Payment : The type of payment method used, 'Cash', 'Ewallet', or 'Credit card'
+        - invoice_id : Invoice of the sales made 
+        - branch : Branch at which sales were made, 'A' (Yangon), 'B' (Mandalay), or 'C' (Naypyitaw)
+        - city : The location of the branch, 'Yangon', 'Mandalay', or 'Naypyitaw'
+        - customer_type : The type of the customer, 'Normal', or 'Member'
+        - gender: Gender of the customer making purchase, 'Male', or 'Female'
+        - product_line : Product line of the product sold, 'Health and beauty', 'Electronic accessories', 'Home and lifestyle', 'Sports and travel', 'Food and beverages', or 'Fashion accessories'
+        - unit_price : The price of each product
+        - quantity : The amount of the product sold
+        - tax_5pct : The amount of tax on the purchase
+        - total : The total cost of the purchase
+        - date : The date on which the purchase was made
+        - time : The time at which the purchase was made
+        - payment : The type of payment method used, 'Cash', 'Ewallet', or 'Credit card'
         - cogs : Cost Of Goods sold
-        - gross margin percentage : Gross margin percentage
-        - gross income : Gross income
-        - Rating : Rating
+        - gross_margin_percentage : Gross margin percentage
+        - gross_income: Gross income
+        - rating : Rating
         """,
 )
-
 ## App interface
 app_ui = ui.page_fluid(
     ui.tags.style("""
