@@ -38,7 +38,7 @@ METRIC_CHOICES = {
     # "column name": "label",
     "Total": "Total Sales",
     "gross income": "Gross Income",
-    "cogs": "Cost of Goods",
+    "cogs": "Cost of Goods Sold",
     "gross margin percentage": "Margin %",
 }
 DEFAULT_METRICS = ["Total", "gross income"]
