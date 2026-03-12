@@ -89,16 +89,27 @@ BASELINE_LABEL = BASELINE_MONTH["Date"].max().strftime("%b %Y")
 
 
 ## Helper functions
+def to_snake_case(name: str) -> str:
+    """Convert a string to snake_case, suitable for column names."""
+    s = str(name).strip().lower()
+    s = s.replace("%", "pct")
+    s = re.sub(r"[^\w\s]", " ", s)
+    s = re.sub(r"\s+", "_", s)
+    s = re.sub(r"_+", "_", s).strip("_")
+    return s
 
 # One-time parquet of data 
 def parq_data(input_path: str, output_path: str) -> None:
 
-    df = pd.read_csv(input_path)
-    
     if not os.path.isdir(os.path.dirname(output_path)):
+        
         os.mkdir(os.path.dirname(output_path))
 
-    df.to_parquet(output_path)
+        df = pd.read_csv(input_path)
+        
+        df = df.rename(columns={c: to_snake_case(c) for c in df.columns})
+        
+        df.to_parquet(output_path)
 
 def connect_db(processed_path: str):
     
@@ -111,16 +122,6 @@ def connect_db(processed_path: str):
 parq_data(input_path=DATA_PATH, output_path=PROCESSED_PATH)
 
 DATA_REF = connect_db(processed_path=PROCESSED_PATH)
-
-def to_snake_case(name: str) -> str:
-    """Convert a string to snake_case, suitable for column names."""
-    s = str(name).strip().lower()
-    s = s.replace("%", "pct")
-    s = re.sub(r"[^\w\s]", " ", s)
-    s = re.sub(r"\s+", "_", s)
-    s = re.sub(r"_+", "_", s).strip("_")
-    return s
-
 
 def tooltip_title(name: str) -> str:
     """Convert snake_case field names to sentence case for tooltips."""
