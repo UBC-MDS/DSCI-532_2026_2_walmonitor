@@ -18,7 +18,7 @@ def to_snake_case(name: str) -> str:
 
 
 def filter_data(df, start, end, branch, COMP_COL, agg_time, agg_method):
-    """Filter dataframe for given inputs
+    """Filter dataframe to contain only specific rows and columns.
 
     Parameters
     ----------
@@ -30,7 +30,7 @@ def filter_data(df, start, end, branch, COMP_COL, agg_time, agg_method):
     end : str
         The end of the desired date range.
     branch : str
-        The desired branch. Options include "A" (Yangon), "B" (Mandalay), "C" (Naypyitaw).
+        The desired branch. Options include "A" (Yangon), "B" (Mandalay), "C" (Naypyitaw), "all".
     COMP_COL : str
         The categories we want to compare. Options include "Product line", "Payment", "Gender", "Customer type".
     agg_time : str

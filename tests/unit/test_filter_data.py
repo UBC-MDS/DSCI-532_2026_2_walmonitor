@@ -1,9 +1,12 @@
 """
 Tests for the filter_data() function in the helper_function module.
 
-The function filter_data() is used to filter a dataframe for the plots plot_sales_mix and plot_product_lines.
+The function filter_data() is used to filter a dataframe for the @reactive.calc 
+df_filtered_product which is used for the plots plot_sales_mix and plot_product_lines.
 
-The following tests ensure that the dataframe passed as a @reactive.calc is as expected (expected columns, values...).
+The following tests ensure that for every input (date range, aggregation method and range, 
+comparison column, branch), the function filter_data() returns the correct output and 
+filters the dataframe as expected.
 """
 import pandas as pd
 import pytest

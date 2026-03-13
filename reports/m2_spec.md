@@ -81,4 +81,4 @@ The dashboard consists of two reactive calculations `df_filtered` and `df_filter
 
 To verify the core logic of the dashboard, the following tests have been implemented:
 
-- `filter_data()` : Unit tests (`pytest`) to ensure the returned dataframe is as expected.
+- `filter_data()` : Unit tests (`pytest`) to ensure that for every input (date range, aggregation method and range, comparison column, branch), the function filters the dataframe as expected.
