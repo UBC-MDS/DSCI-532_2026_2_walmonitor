@@ -45,7 +45,7 @@ def filter_data(df, start, end, branch, COMP_COL, agg_time, agg_method):
 
     Examples
     --------
-    >>> filter_data(df, pd.Datetime('2019-01-01'), pd.Datetime('2019-01-01'), 'A', 'Gender', 'day', 'mean')
+    >>> filter_data(df, pd.to_datetime('2019-01-01'), pd.to_datetime('2019-01-01'), 'A', 'Gender', 'day', 'mean')
 
 
     """
