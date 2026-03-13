@@ -65,6 +65,15 @@ You can run this app locally following the instructions below.
 
 To contribute to this project, please refer to the [contribution guidelines](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md).
 
+## Tests
+
+To run the unit tests, follow these instructions:
+1. Follow the first 3 steps in the [Contributors](#Contributors) section above to clone the repository.
+2. In the root of the directory, run the following command:
+```bash
+pytest
+```
+
 ## LLM usage disclosure
 
 Large language models (LLMs) were used to assist the development of this project. We did our best to ensure that the use of LLMs was ethical and transparent. Below is a table summarizing the LLMs we used, their purposes, and the last time we accessed them.
