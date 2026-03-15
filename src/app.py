@@ -18,7 +18,7 @@ from querychat import QueryChat
 
 load_dotenv()
 
-from helper_functions import to_snake_case, filter_data
+from utils import to_snake_case, filter_data
 
 alt.data_transformers.enable("vegafusion")
 warnings.filterwarnings("ignore", module="altair")

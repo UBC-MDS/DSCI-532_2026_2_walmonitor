@@ -7,6 +7,7 @@ Helper functions for the Walmonitor Dashboard
 import re
 import pandas as pd
 
+
 def to_snake_case(name: str) -> str:
     """Convert a string to snake_case, suitable for column names."""
     s = str(name).strip().lower()
@@ -23,7 +24,7 @@ def filter_data(df, start, end, branch, COMP_COL, agg_time, agg_method):
     Parameters
     ----------
     df : pd.DataFrame
-        The data to be filtered. Needs to contain the following columns : "Date", "Branch", "Total", 
+        The data to be filtered. Needs to contain the following columns : "Date", "Branch", "Total",  
         and the chosen COMP_COL.
     start : str
         The start of the desired date range.
@@ -45,14 +46,13 @@ def filter_data(df, start, end, branch, COMP_COL, agg_time, agg_method):
 
     Examples
     --------
-    >>> filter_data(df, pd.to_datetime('2019-01-01'), pd.to_datetime('2019-01-01'), 'A', 'Gender', 'day', 'mean')
+    >>> filter_data(df, pd.to_datetime('2019-01-01'), pd.to_datetime('2019-02-01'), 'A', 'Gender', 'day', 'mean')
 
 
     """
     start_ts = pd.Timestamp(start)
     end_ts = pd.Timestamp(end) + pd.Timedelta(days=1)
     mask = (df["Date"] >= start_ts) & (df["Date"] < end_ts)
-
 
     if branch != "all":
         mask &= df["Branch"] == branch

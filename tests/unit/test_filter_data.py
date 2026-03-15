@@ -15,7 +15,7 @@ import sys
 import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src')))
-from helper_functions import filter_data
+from utils import filter_data
 
 
 @pytest.fixture 
