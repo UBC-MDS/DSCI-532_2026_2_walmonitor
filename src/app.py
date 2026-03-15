@@ -1,13 +1,14 @@
-import re
 import pandas as pd
 import altair as alt
 import warnings
 import os
-import duckdb
+import sys
 import ibis
 from ibis import _
 from datetime import date
 from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent))
 
 from shiny import App, ui, render, reactive, req
 from shinywidgets import render_altair, output_widget
