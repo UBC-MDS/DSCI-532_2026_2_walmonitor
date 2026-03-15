@@ -75,3 +75,10 @@ The dashboard consists of two reactive calculations `df_filtered` and `df_filter
 - Outputs:
   - `plot_sales_mix`: An Altair chart of the stacked area over time displayed in the bottom left of the dashboard.
   - `plot_product_lines`: An Altair chart of the ranked bars displayed in the bottom right of the dashboard
+
+
+## Tests
+
+To verify the core logic of the dashboard, the following tests have been implemented:
+
+- `filter_data()` : Unit tests (`pytest`) to ensure that for every input (date range, aggregation method and range, comparison column, branch), the function filters the dataframe as expected. This ensures that the plots `plot_sales_mix` and `plot_product_lines` show the correct data. 
