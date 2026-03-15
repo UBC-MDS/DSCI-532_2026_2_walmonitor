@@ -5,7 +5,7 @@ import warnings
 import os
 import duckdb
 import ibis
-from ibis import _  
+from ibis import _
 from datetime import date
 from pathlib import Path
 
@@ -15,6 +15,8 @@ from shinywidgets import render_altair, output_widget
 import chatlas as ctl
 from dotenv import load_dotenv
 from querychat import QueryChat
+
+from utils import to_snake_case, filter_data
 
 load_dotenv()
 
@@ -72,7 +74,7 @@ DATA_PATH = (
     Path(__file__).resolve().parents[1] / "data" / "raw" / "walmart_sales_data.csv"
 )
 
-PROCESSED_PATH = 'data/processed/walmart_sales_data.parquet'
+PROCESSED_PATH = "data/processed/walmart_sales_data.parquet"
 
 DATA_RAW = pd.read_csv(DATA_PATH)
 DATA_RAW["Date"] = pd.to_datetime(DATA_RAW["Date"])
@@ -88,40 +90,32 @@ BASELINE_MONTH = DATA_BASE[
 BASELINE_LABEL = BASELINE_MONTH["Date"].max().strftime("%b %Y")
 
 
-## Helper functions
-def to_snake_case(name: str) -> str:
-    """Convert a string to snake_case, suitable for column names."""
-    s = str(name).strip().lower()
-    s = s.replace("%", "pct")
-    s = re.sub(r"[^\w\s]", " ", s)
-    s = re.sub(r"\s+", "_", s)
-    s = re.sub(r"_+", "_", s).strip("_")
-    return s
-
-# One-time parquet of data 
+# One-time parquet of data
 def parq_data(input_path: str, output_path: str) -> None:
 
     if not os.path.isdir(os.path.dirname(output_path)):
-        
         os.mkdir(os.path.dirname(output_path))
 
         df = pd.read_csv(input_path)
-        
+
         df = df.rename(columns={c: to_snake_case(c) for c in df.columns})
-        
+
         df.to_parquet(output_path)
 
+
 def connect_db(processed_path: str):
-    
-    con = ibis.duckdb.connect()  
-    
+
+    con = ibis.duckdb.connect()
+
     df_ref = con.read_parquet(processed_path)
 
     return df_ref
 
+
 parq_data(input_path=DATA_PATH, output_path=PROCESSED_PATH)
 
 DATA_REF = connect_db(processed_path=PROCESSED_PATH)
+
 
 def tooltip_title(name: str) -> str:
     """Convert snake_case field names to sentence case for tooltips."""
@@ -576,36 +570,13 @@ def server(input, output, session):
     @reactive.calc
     def df_filtered_product() -> pd.DataFrame:
         df = DATA_RAW
-
         start, end = input.input_date_range()
-        start_ts = pd.Timestamp(start)
-        end_ts = pd.Timestamp(end) + pd.Timedelta(days=1)
-        mask = (df["Date"] >= start_ts) & (df["Date"] < end_ts)
-
         branch = input.input_branch()
-        if branch != "all":
-            mask &= df["Branch"] == branch
-
         COMP_COL = input.input_comparison()
-        SALES_COL = "Total"
+        agg_time = input.input_agg()
+        agg_method = input.input_agg_method()
 
-        df = df.loc[mask, ["Date", COMP_COL, SALES_COL]].copy()
-
-        if input.input_agg() == "day":
-            df["time"] = df["Date"].dt.floor("D")
-        else:
-            df["time"] = df["Date"].dt.to_period("W-SAT").dt.start_time
-
-        out = (
-            df.groupby(["time", COMP_COL], as_index=False)[SALES_COL]
-            .agg(input.input_agg_method())
-            .sort_values(["time", COMP_COL])
-            .reset_index(drop=True)
-        )
-
-        out = out.rename(columns={c: to_snake_case(c) for c in out.columns})
-
-        return out
+        return filter_data(df, start, end, branch, COMP_COL, agg_time, agg_method)
 
     @reactive.effect
     def _update_dates():
