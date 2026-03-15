@@ -68,11 +68,14 @@ To contribute to this project, please refer to the [contribution guidelines](CON
 ## Tests
 
 To run the unit tests, follow these instructions:
+
 1. Follow the first 3 steps in the [Contributors](#contributors) section above to clone the repository.
+
 2. In the root of the directory, run the following command:
-```bash
-pytest
-```
+
+    ```bash
+    pytest
+    ```
 
 ## LLM usage disclosure
 
