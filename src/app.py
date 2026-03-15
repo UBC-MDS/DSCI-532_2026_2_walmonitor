@@ -5,7 +5,7 @@ import warnings
 import os
 import duckdb
 import ibis
-from ibis import _  
+from ibis import _
 from datetime import date
 from pathlib import Path
 
@@ -16,9 +16,9 @@ import chatlas as ctl
 from dotenv import load_dotenv
 from querychat import QueryChat
 
-load_dotenv()
+from utils import to_snake_case, filter_data
 
-from helper_functions import to_snake_case, filter_data
+load_dotenv()
 
 alt.data_transformers.enable("vegafusion")
 warnings.filterwarnings("ignore", module="altair")
@@ -74,7 +74,7 @@ DATA_PATH = (
     Path(__file__).resolve().parents[1] / "data" / "raw" / "walmart_sales_data.csv"
 )
 
-PROCESSED_PATH = 'data/processed/walmart_sales_data.parquet'
+PROCESSED_PATH = "data/processed/walmart_sales_data.parquet"
 
 DATA_RAW = pd.read_csv(DATA_PATH)
 DATA_RAW["Date"] = pd.to_datetime(DATA_RAW["Date"])
@@ -90,30 +90,32 @@ BASELINE_MONTH = DATA_BASE[
 BASELINE_LABEL = BASELINE_MONTH["Date"].max().strftime("%b %Y")
 
 
-# One-time parquet of data 
+# One-time parquet of data
 def parq_data(input_path: str, output_path: str) -> None:
 
     if not os.path.isdir(os.path.dirname(output_path)):
-        
         os.mkdir(os.path.dirname(output_path))
 
         df = pd.read_csv(input_path)
-        
+
         df = df.rename(columns={c: to_snake_case(c) for c in df.columns})
-        
+
         df.to_parquet(output_path)
 
+
 def connect_db(processed_path: str):
-    
-    con = ibis.duckdb.connect()  
-    
+
+    con = ibis.duckdb.connect()
+
     df_ref = con.read_parquet(processed_path)
 
     return df_ref
 
+
 parq_data(input_path=DATA_PATH, output_path=PROCESSED_PATH)
 
 DATA_REF = connect_db(processed_path=PROCESSED_PATH)
+
 
 def tooltip_title(name: str) -> str:
     """Convert snake_case field names to sentence case for tooltips."""
@@ -565,7 +567,6 @@ def server(input, output, session):
 
         return out
 
-
     @reactive.calc
     def df_filtered_product() -> pd.DataFrame:
         df = DATA_RAW
@@ -575,7 +576,7 @@ def server(input, output, session):
         agg_time = input.input_agg()
         agg_method = input.input_agg_method()
 
-        return filter_data(df,start,end,branch,COMP_COL,agg_time,agg_method)
+        return filter_data(df, start, end, branch, COMP_COL, agg_time, agg_method)
 
     @reactive.effect
     def _update_dates():
