@@ -3,10 +3,10 @@
   "locale": "English_Canada.utf8",
   "metadata": {
     "appmode": "python-shiny",
-    "entrypoint": "app.py"
+    "entrypoint": "src/app.py"
   },
   "python": {
-    "version": "3.12.12",
+    "version": "3.11",
     "package_manager": {
       "name": "pip",
       "version": "26.0.1",
@@ -17,10 +17,10 @@
     "requirements.txt": {
       "checksum": "1c903b2da76666a61f414ea2c9ddbbce"
     },
-    "app.py": {
+    "src/app.py": {
       "checksum": "674be07f1dd83c8eacefc6c8de6f75e4"
     },
-    "utils.py": {
+    "src/utils.py": {
       "checksum": "3b48805c1e4c5be367f61c5144f3078e"
     }
   }
