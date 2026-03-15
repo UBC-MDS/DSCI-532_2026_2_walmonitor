@@ -81,6 +81,7 @@ DATA_RAW["Date"] = pd.to_datetime(DATA_RAW["Date"])
 BASE_COLS = ["Date", "Branch", "Product line"] + list(METRIC_CHOICES.keys())
 DATA_BASE = DATA_RAW[BASE_COLS].copy()  # Crop unused columns
 
+
 # Module level (outside server)
 BASELINE_MONTH = DATA_BASE[
     (DATA_BASE["Date"] >= pd.Timestamp(date(2019, 1, 1)))
@@ -249,7 +250,7 @@ def make_ranked_product_lines_bars(
 
 ## Querychat
 qc = QueryChat(
-    DATA_RAW.copy(),
+    DATA_RAW.rename(columns={c: to_snake_case(c) for c in DATA_RAW.columns}),
     "walmart",
     client=ctl.ChatGithub(model="gpt-4.1-mini"),
     greeting="""👋 Ask me anything about the Walmart sales.
@@ -261,26 +262,25 @@ qc = QueryChat(
     """,
     data_description="""
         Walmart Sales Data (1000 Transactions).
-        - Invoice ID: Invoice of the sales made 
-        - Branch: Branch at which sales were made, 'A' (Yangon), 'B' (Mandalay), or 'C' (Naypyitaw)
-        - City: The location of the branch, 'Yangon', 'Mandalay', or 'Naypyitaw'
-        - Customer type: The type of the customer, 'Normal', or 'Member'
-        - Gender: Gender of the customer making purchase, 'Male', or 'Female'
-        - Product line: Product line of the product sold, 'Health and beauty', 'Electronic accessories', 'Home and lifestyle', 'Sports and travel', 'Food and beverages', or 'Fashion accessories'
-        - Unit price: The price of each product
-        - Quantity : The amount of the product sold
-        - Tax 5% : The amount of tax on the purchase
-        - Total : The total cost of the purchase
-        - Date : The date on which the purchase was made
-        - Time : The time at which the purchase was made
-        - Payment : The type of payment method used, 'Cash', 'Ewallet', or 'Credit card'
+        - invoice_id : Invoice of the sales made 
+        - branch : Branch at which sales were made, 'A' (Yangon), 'B' (Mandalay), or 'C' (Naypyitaw)
+        - city : The location of the branch, 'Yangon', 'Mandalay', or 'Naypyitaw'
+        - customer_type : The type of the customer, 'Normal', or 'Member'
+        - gender: Gender of the customer making purchase, 'Male', or 'Female'
+        - product_line : Product line of the product sold, 'Health and beauty', 'Electronic accessories', 'Home and lifestyle', 'Sports and travel', 'Food and beverages', or 'Fashion accessories'
+        - unit_price : The price of each product
+        - quantity : The amount of the product sold
+        - tax_5pct : The amount of tax on the purchase
+        - total : The total cost of the purchase
+        - date : The date on which the purchase was made
+        - time : The time at which the purchase was made
+        - payment : The type of payment method used, 'Cash', 'Ewallet', or 'Credit card'
         - cogs : Cost Of Goods sold
-        - gross margin percentage : Gross margin percentage
-        - gross income : Gross income
-        - Rating : Rating
+        - gross_margin_percentage : Gross margin percentage
+        - gross_income: Gross income
+        - rating : Rating
         """,
 )
-
 ## App interface
 app_ui = ui.page_fluid(
     ui.tags.style("""
@@ -684,8 +684,8 @@ def server(input, output, session):
         if (
             df is None
             or df.empty
-            or "Product line" not in df.columns
-            or "Total" not in df.columns
+            or "product_line" not in df.columns
+            or "total" not in df.columns
         ):
             return (
                 alt.Chart(pd.DataFrame({"note": ["No data"]}))
@@ -693,17 +693,17 @@ def server(input, output, session):
                 .encode(text="note:N")
             )
         summary = (
-            df.groupby("Product line", as_index=False)["Total"]
+            df.groupby("product_line", as_index=False)["total"]
             .sum()
-            .sort_values("Total", ascending=False)
+            .sort_values("total", ascending=False)
         )
         return (
             alt.Chart(summary)
             .mark_bar()
             .encode(
-                x=alt.X("Total:Q", title="Total Sales"),
-                y=alt.Y("Product line:N", sort="-x", title=""),
-                tooltip=["Product line", "Total"],
+                x=alt.X("total:Q", title="Total Sales"),
+                y=alt.Y("product_line:N", sort="-x", title=""),
+                tooltip=["product_line", "total"],
             )
             .properties(height=280, width="container")
         )
@@ -714,8 +714,8 @@ def server(input, output, session):
         if (
             df is None
             or df.empty
-            or "Date" not in df.columns
-            or "Total" not in df.columns
+            or "date" not in df.columns
+            or "total" not in df.columns
         ):
             return (
                 alt.Chart(pd.DataFrame({"note": ["No data"]}))
@@ -723,15 +723,15 @@ def server(input, output, session):
                 .encode(text="note:N")
             )
         df = df.copy()
-        df["Date"] = pd.to_datetime(df["Date"])
-        daily = df.groupby("Date", as_index=False)["Total"].sum()
+        df["date"] = pd.to_datetime(df["date"])
+        daily = df.groupby("date", as_index=False)["total"].sum()
         return (
             alt.Chart(daily)
             .mark_line()
             .encode(
-                x=alt.X("Date:T", title="Date"),
-                y=alt.Y("Total:Q", title="Total Sales"),
-                tooltip=["Date:T", "Total:Q"],
+                x=alt.X("date:T", title="Date"),
+                y=alt.Y("total:Q", title="Total Sales"),
+                tooltip=["date:T", "total:Q"],
             )
             .properties(height=280, width="container")
         )
