@@ -350,8 +350,8 @@ app_ui = ui.page_fluid(
                             height="130px",
                         ),
                         ui.value_box(
-                            "% of All-time Sales Shown",
-                            ui.output_ui("fraction_of_total_sales"),
+                            "Gross Income Shown",
+                            ui.output_ui("gross_income_viewed"),
                             height="130px",
                         ),
                         ui.value_box(
@@ -759,16 +759,14 @@ def server(input, output, session):
         return html_string
 
     @render.text
-    def fraction_of_total_sales():
+    def gross_income_viewed():
 
-        req("Total" in input.input_metrics())
+        req("gross income" in input.input_metrics())
 
-        all_time_sales = DATA_BASE["Total"].sum()
-
-        frac_total_sales = 100 * df_filtered()["total"].sum() / all_time_sales
+        gross_income_total = df_filtered()["gross_income"].sum()
 
         html_string = ui.HTML(
-            f'<span style="color:{"black"}; font-weight:bold;">{frac_total_sales:,.0f}%</span>'
+            f'<span style="color:{"black"}; font-weight:bold;">${gross_income_total:,.0f}</span>'
         )
 
         return html_string
