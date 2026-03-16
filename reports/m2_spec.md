@@ -9,8 +9,9 @@
 | 3   | As the Operations manager, I want to identify the top product lines, payment methods and customer characteristics over the entire analyzed time period, and whether the rankings differ by sales vs gross income so I know what to prioritize in the annual report.|  🔄 Revised   | Expanded the set of ranked categories for sales metrics to include other categories than just product line to compliment the sales  mix over time chart and user story 2 output, as well as provided high-level sales insight for the entire examined period of time.|
 
 ## Database
+
 - Reactive calculations now rely on the walmart data in parquet format and a ibis/duckdb connection (as of release 0.4.0).
-- Dataframe calculations described below are lazily evaluated based on the database reference rather than the csv data.
+- DataFrame calculations described below are lazily evaluated based on the database reference rather than the `csv` data.
 
 ## Component Inventory
 
@@ -76,9 +77,8 @@ The dashboard consists of two reactive calculations `df_filtered` and `df_filter
   - `plot_sales_mix`: An Altair chart of the stacked area over time displayed in the bottom left of the dashboard.
   - `plot_product_lines`: An Altair chart of the ranked bars displayed in the bottom right of the dashboard
 
-
 ## Tests
 
 To verify the core logic of the dashboard, the following tests have been implemented:
 
-- `filter_data()` : Unit tests (`pytest`) to ensure that for every input (date range, aggregation method and range, comparison column, branch), the function filters the dataframe as expected. This ensures that the plots `plot_sales_mix` and `plot_product_lines` show the correct data. 
+- `filter_data()`: Unit tests (`pytest`) to ensure that for every input (date range, aggregation method and range, comparison column, branch), the function filters the DataFrame as expected. This ensures that the plots `plot_sales_mix` and `plot_product_lines` show the correct data.
