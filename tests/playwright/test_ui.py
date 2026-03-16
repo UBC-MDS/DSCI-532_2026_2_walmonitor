@@ -4,12 +4,31 @@ Tests verify that user interactions with the filters correctly update the charts
 """
 
 import pytest
+<<<<<<< Updated upstream
 from playwright.sync_api import Page, expect
 
 
 @pytest.fixture(scope="session")
 def app_url():
     return "http://127.0.0.1:8000"
+=======
+import subprocess
+import time
+from playwright.sync_api import Page, expect
+
+
+@pytest.fixture(scope="session", autouse=True)
+def start_app():
+    proc = subprocess.Popen(["shiny", "run", "src/app.py", "--port", "8765"])
+    time.sleep(5)
+    yield
+    proc.terminate()
+
+
+@pytest.fixture(scope="session")
+def app_url():
+    return "http://127.0.0.1:8765"
+>>>>>>> Stashed changes
 
 
 def test_branch_filter_updates_display(page: Page, app_url):
@@ -19,11 +38,17 @@ def test_branch_filter_updates_display(page: Page, app_url):
     """
     page.goto(app_url)
     page.wait_for_timeout(3000)
+<<<<<<< Updated upstream
 
     page.locator("select#input_branch").select_option("A")
     page.wait_for_timeout(2000)
 
     expect(page.locator(".value-box")).to_have_count(4)
+=======
+    page.locator("select#input_branch").select_option("A")
+    page.wait_for_timeout(2000)
+    expect(page.locator(".bslib-value-box")).to_have_count(4)
+>>>>>>> Stashed changes
 
 
 def test_date_range_filter(page: Page, app_url):
@@ -33,6 +58,7 @@ def test_date_range_filter(page: Page, app_url):
     """
     page.goto(app_url)
     page.wait_for_timeout(3000)
+<<<<<<< Updated upstream
 
     page.locator("#input_date_range_start").fill("2019-02-01")
     page.locator("#input_date_range_end").fill("2019-02-28")
@@ -40,6 +66,13 @@ def test_date_range_filter(page: Page, app_url):
     page.wait_for_timeout(2000)
 
     expect(page.locator(".value-box")).to_have_count(4)
+=======
+    page.locator("#input_date_range input").nth(0).fill("2019-02-01")
+    page.locator("#input_date_range input").nth(1).fill("2019-02-28")
+    page.keyboard.press("Tab")
+    page.wait_for_timeout(2000)
+    expect(page.locator(".bslib-value-box")).to_have_count(4)
+>>>>>>> Stashed changes
 
 
 def test_aggregation_toggle(page: Page, app_url):
@@ -49,8 +82,13 @@ def test_aggregation_toggle(page: Page, app_url):
     """
     page.goto(app_url)
     page.wait_for_timeout(3000)
+<<<<<<< Updated upstream
 
     page.locator("input[type='radio'][value='week']").click()
     page.wait_for_timeout(2000)
 
+=======
+    page.locator("input[type='radio'][value='week']").click()
+    page.wait_for_timeout(2000)
+>>>>>>> Stashed changes
     expect(page.locator("input[type='radio'][value='week']")).to_be_checked()
