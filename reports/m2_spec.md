@@ -33,7 +33,6 @@
 | `plot_sales_trend` | Output | `@render_altair` | `df_filtered` | #1 |
 | `plot_sales_mix` | Output | `@render_altair` | `df_filtered_product_selected`, `input_comparison`, `input_slider_range`, `input_agg` | #2 |
 | `plot_product_lines` | Output | `@render_altair` | `df_filtered_product`, `input_comparison`, `input_agg_method` | #3 |
-| `active_category_filter` | Output | `@render.text` | `selected_category`, `input_comparison` | #2 |
 | `metrics_warning` | Output | `@render.ui` | `input_metrics` | #1 |
 | `sales_change` | Output | `@render.ui` | `df_filtered`, `df_rel_baseline`, `input_metrics` | #1 |
 | `gross_income_viewed` | Output | `@render.text` | `df_filtered` | #1 |
@@ -87,9 +86,6 @@ flowchart LR
   I --> P2
   B --> P2
 
-  S --> T([active_category_filter])
-  H --> T
-
   A --> W([metrics_warning])
   A --> L([selected_metrics])
   E --> L
@@ -131,7 +127,6 @@ The dashboard consists of multiple reactive calculations that take user input ch
 - Transformation: read the clicked bar selection from the ranked bar chart and extract the selected comparison category value so that the bar chart can behave like an input control.
 - Outputs:
   - `df_filtered_product_selected`: A filtered lower-chart DataFrame based on the clicked category.
-  - `active_category_filter`: A text output describing the active clicked category filter.
 
 ### `df_filtered_product_selected`
 

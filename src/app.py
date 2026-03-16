@@ -748,13 +748,6 @@ def server(input, output, session):
         ):  # Used Claude.ai to help suggest ways to warn user to select at least one metric
             return ui.help_text("⚠️ Please select at least one metric.⚠️")
 
-    @render.text
-    def active_category_filter():
-        selected = selected_category()
-        if selected is None:
-            return f"Active filter: none ({input.input_comparison()})"
-        return f"Active filter: {selected} ({input.input_comparison()})"
-
     # ── Tab 2: querychat ──────────────────────────────────────────────────────
     qc_vals = qc.server()
 
