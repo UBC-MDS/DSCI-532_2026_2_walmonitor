@@ -701,7 +701,7 @@ def server(input, output, session):
 
         chart = (
             alt.Chart(data)
-            .mark_area()
+            .mark_area(opacity=0.8)
             .encode(
                 y=alt.Y("total:Q", title="Total Sales"),
                 x=alt.X("time:T", title="Date", axis=alt.Axis(labelAngle=0)),
