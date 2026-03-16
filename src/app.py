@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent))
 
 from shiny import App, ui, render, reactive, req
-from shinywidgets import render_altair, output_widget
+from shinywidgets import render_altair, output_widget, reactive_read
 
 import chatlas as ctl
 from dotenv import load_dotenv
@@ -213,10 +213,17 @@ def make_ranked_product_lines_bars(
     )
 
     color_scale = make_comparison_color_scale(plot_df, comparison)
+    click_select = alt.selection_point(
+        name="bar_select",
+        fields=[comparison],
+        on="click",
+        clear="dblclick",
+        empty=True,
+    )
 
     return (
         alt.Chart(plot_df)
-        .mark_bar()
+        .mark_bar(cursor="pointer")
         .encode(
             x=alt.X(
                 "total:Q",
@@ -233,6 +240,15 @@ def make_ranked_product_lines_bars(
                 scale=color_scale,
                 legend=None,
             ),
+            opacity=alt.when(click_select)
+            .then(alt.value(1.0))
+            .otherwise(alt.value(0.45)),
+            stroke=alt.when(click_select)
+            .then(alt.value("black"))
+            .otherwise(alt.value(None)),
+            strokeWidth=alt.when(click_select)
+            .then(alt.value(1.5))
+            .otherwise(alt.value(0)),
             tooltip=[
                 alt.Tooltip(f"{comparison}:N", title=tooltip_title(comparison)),
                 alt.Tooltip(
@@ -242,7 +258,8 @@ def make_ranked_product_lines_bars(
                 ),
             ],
         )
-        .properties(height=450, width="container")
+        .add_params(click_select)
+        .properties(height=400, width="container")
     )
 
 
@@ -442,6 +459,12 @@ app_ui = ui.page_fluid(
                         ui.card(
                             ui.card_header("Ranked Sales", style="font-size: 1.2rem;"),
                             ui.div(
+                                ui.help_text(
+                                    "Click a bar to filter the left chart. Double-click to clear the filter."
+                                ),
+                                style="margin-bottom: 8px;",
+                            ),
+                            ui.div(
                                 output_widget("plot_product_lines"),
                                 style="height: 200px;",
                             ),
@@ -488,6 +511,25 @@ app_ui = ui.page_fluid(
 
 ## Server
 def server(input, output, session):
+
+    def extract_selected_category(selection, comparison: str):
+        """Return the clicked bar category from an Altair point selection."""
+        if selection is None:
+            return None
+
+        raw_value = getattr(selection, "value", selection)
+        if raw_value is None:
+            return None
+
+        if isinstance(raw_value, dict):
+            raw_value = [raw_value]
+
+        if isinstance(raw_value, list) and len(raw_value) > 0:
+            first = raw_value[0]
+            if isinstance(first, dict):
+                return first.get(comparison)
+
+        return None
 
     # ── Tab 1: reactive calcs ─────────────────────────────────────────────────
     ## Reactive calcs
@@ -600,6 +642,23 @@ def server(input, output, session):
         )
         return out
 
+    @reactive.calc
+    def selected_category():
+        comparison = to_snake_case(input.input_comparison())
+        selection = reactive_read(plot_product_lines.widget.selections, "bar_select")
+        return extract_selected_category(selection, comparison)
+
+    @reactive.calc
+    def df_filtered_product_selected() -> pd.DataFrame:
+        data = df_filtered_product().copy()
+        comparison = to_snake_case(input.input_comparison())
+        selected = selected_category()
+
+        if selected is None or comparison not in data.columns:
+            return data
+
+        return data[data[comparison] == selected].reset_index(drop=True)
+
     @reactive.effect
     def _update_dates():
         start, end = input.input_date_range()[0], input.input_date_range()[1]
@@ -629,7 +688,7 @@ def server(input, output, session):
         This function uses user input to determine what to compare in the plot (Product line, Customer type, Payment type, Gender)
         and what date range to choose from if the values are aggregated by day.
         """
-        data = df_filtered_product()
+        data = df_filtered_product_selected()
 
         input_comparison = to_snake_case(input.input_comparison())
 
@@ -688,6 +747,13 @@ def server(input, output, session):
             len(input.input_metrics()) == 0
         ):  # Used Claude.ai to help suggest ways to warn user to select at least one metric
             return ui.help_text("⚠️ Please select at least one metric.⚠️")
+
+    @render.text
+    def active_category_filter():
+        selected = selected_category()
+        if selected is None:
+            return f"Active filter: none ({input.input_comparison()})"
+        return f"Active filter: {selected} ({input.input_comparison()})"
 
     # ── Tab 2: querychat ──────────────────────────────────────────────────────
     qc_vals = qc.server()
