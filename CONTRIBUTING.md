@@ -118,3 +118,18 @@ using [NumPy style](https://numpydoc.readthedocs.io/en/latest/format.html).
 Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). 
 By participating in this project, you agree to abide by its terms.
 
+## Collaboration retrospective
+
+Overall, the collaboration in M3 was very effective, with every team member contributing equally and completing their assigned tasks on time.
+#### What worked:
+- Every PR was reviewed by at least one team member
+- Most PRs had detailed outlines of changes made (which helped make reviewing easier)
+#### What didn't work:
+- A couple of PRs that implemented many changes were approved without comments (a short comment can help make the process more legible for the whole team)
+- A few substantial features were implemented with no design documentation updates
+
+#### Norms for M4:
+- Ensure every PR has a detailed outline of changes (and/or mentions an issue that explains the changes) 
+- Large PRS (those that implement many important changes) should be approved with a short comment to describe what was checked
+- Ensure the design documentation (i.e `m2_spec.md`) is up to date with all features implemented in the dashboard in the previous milestones
+- Ensure all substantial features implemented are accompanied with a design documentation update
