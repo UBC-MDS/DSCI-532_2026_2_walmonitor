@@ -21,7 +21,7 @@ from utils import to_snake_case, filter_data
 
 load_dotenv()
 
-alt.data_transformers.enable("vegafusion")
+alt.data_transformers.disable_max_rows()
 warnings.filterwarnings("ignore", module="altair")
 
 
@@ -106,17 +106,14 @@ def parq_data(input_path: str, output_path: str) -> None:
 
 
 def connect_db(processed_path: str):
-
     con = ibis.duckdb.connect()
-
     df_ref = con.read_parquet(processed_path)
-
-    return df_ref
+    return con, df_ref
 
 
 parq_data(input_path=DATA_PATH, output_path=PROCESSED_PATH)
 
-DATA_REF = connect_db(processed_path=PROCESSED_PATH)
+CON, DATA_REF = connect_db(processed_path=PROCESSED_PATH)
 
 
 def tooltip_title(name: str) -> str:
@@ -500,39 +497,34 @@ def server(input, output, session):
         Apply filters and aggregations to the base data,
         returning the processed DataFrame.
         """
-        df = DATA_BASE.copy()
-
-        # Filter rows by date range
         start, end = input.input_date_range()
-        start_ts = pd.Timestamp(start)
-        end_ts = pd.Timestamp(end) + pd.Timedelta(days=1)
-        df = df[(df["Date"] >= start_ts) & (df["Date"] < end_ts)]
-
-        # Filter rows by branch
         branch = input.input_branch()
-        if branch != "all":
-            df = df[df["Branch"] == branch]
-
-        # Filter columns by metrics
         metrics = list(input.input_metrics() or [])
+
         if not metrics:
             return pd.DataFrame(columns=["date"])
 
-        df = df[["Date"] + metrics].copy()
+        t = DATA_REF
+        start_ts = pd.Timestamp(start)
+        end_ts = pd.Timestamp(end) + pd.Timedelta(days=1)
+        t = t.filter((t.date.cast("timestamp") >= start_ts) & (t.date.cast("timestamp") < end_ts))
 
-        # Aggregate by day/week and sum/mean
+        if branch != "all":
+            t = t.filter(t.branch == branch)
+
+        snake_metrics = [to_snake_case(m) for m in metrics]
+        t = t.select(["date"] + snake_metrics)
+
+        df = t.execute()
+        df["date"] = pd.to_datetime(df["date"])
+
         if input.input_agg() == "day":
-            df["date"] = df["Date"].dt.floor("D")
+            df["date"] = df["date"].dt.floor("D")
         else:
-            df["date"] = (
-                df["Date"].dt.to_period("W-SAT").dt.start_time
-            )  # Week starting Sunday
+            df["date"] = df["date"].dt.to_period("W-SAT").dt.start_time
 
-        out = df.groupby("date", as_index=False)[metrics].agg(input.input_agg_method())
-        out = out.sort_values("date").reset_index(drop=True)
-        out = out.rename(columns={c: to_snake_case(c) for c in out.columns})
-
-        return out
+        out = df.groupby("date", as_index=False)[snake_metrics].agg(input.input_agg_method())
+        return out.sort_values("date").reset_index(drop=True)
 
     @reactive.calc
     def df_rel_baseline() -> pd.DataFrame:
@@ -570,14 +562,38 @@ def server(input, output, session):
 
     @reactive.calc
     def df_filtered_product() -> pd.DataFrame:
-        df = DATA_RAW
         start, end = input.input_date_range()
         branch = input.input_branch()
-        COMP_COL = input.input_comparison()
+        COMP_COL = to_snake_case(input.input_comparison())
         agg_time = input.input_agg()
         agg_method = input.input_agg_method()
 
-        return filter_data(df, start, end, branch, COMP_COL, agg_time, agg_method)
+        t = DATA_REF
+        start_ts = pd.Timestamp(start)
+        end_ts = pd.Timestamp(end) + pd.Timedelta(days=1)
+        t = t.filter((t.date.cast("timestamp") >= start_ts) & (t.date.cast("timestamp") < end_ts))
+
+        if branch != "all":
+            t = t.filter(t.branch == branch)
+
+        t = t.select(["date", COMP_COL, "total"])
+
+        df = t.execute()
+        df["date"] = pd.to_datetime(df["date"])
+
+        if agg_time == "day":
+            df["time"] = df["date"].dt.floor("D")
+        else:
+            df["time"] = df["date"].dt.to_period("W-SAT").dt.start_time
+
+        out = (
+            df.groupby(["time", COMP_COL], as_index=False)["total"]
+            .agg(agg_method)
+            .sort_values(["time", COMP_COL])
+            .reset_index(drop=True)
+        )
+        return out
+
 
     @reactive.effect
     def _update_dates():
