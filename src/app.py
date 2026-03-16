@@ -299,7 +299,7 @@ app_ui = ui.page_fluid(
         }
     """),
     ui.div(
-        ui.h1("Walmonitor 0.3.0"),
+        ui.h1("Walmonitor 0.4.0"),
         style="margin-top: 24px; margin-bottom: 24px; margin-left: 24px;",
     ),
     ui.navset_tab(
@@ -507,7 +507,9 @@ def server(input, output, session):
         t = DATA_REF
         start_ts = pd.Timestamp(start)
         end_ts = pd.Timestamp(end) + pd.Timedelta(days=1)
-        t = t.filter((t.date.cast("timestamp") >= start_ts) & (t.date.cast("timestamp") < end_ts))
+        t = t.filter(
+            (t.date.cast("timestamp") >= start_ts) & (t.date.cast("timestamp") < end_ts)
+        )
 
         if branch != "all":
             t = t.filter(t.branch == branch)
@@ -523,7 +525,9 @@ def server(input, output, session):
         else:
             df["date"] = df["date"].dt.to_period("W-SAT").dt.start_time
 
-        out = df.groupby("date", as_index=False)[snake_metrics].agg(input.input_agg_method())
+        out = df.groupby("date", as_index=False)[snake_metrics].agg(
+            input.input_agg_method()
+        )
         return out.sort_values("date").reset_index(drop=True)
 
     @reactive.calc
@@ -571,7 +575,9 @@ def server(input, output, session):
         t = DATA_REF
         start_ts = pd.Timestamp(start)
         end_ts = pd.Timestamp(end) + pd.Timedelta(days=1)
-        t = t.filter((t.date.cast("timestamp") >= start_ts) & (t.date.cast("timestamp") < end_ts))
+        t = t.filter(
+            (t.date.cast("timestamp") >= start_ts) & (t.date.cast("timestamp") < end_ts)
+        )
 
         if branch != "all":
             t = t.filter(t.branch == branch)
@@ -593,7 +599,6 @@ def server(input, output, session):
             .reset_index(drop=True)
         )
         return out
-
 
     @reactive.effect
     def _update_dates():
