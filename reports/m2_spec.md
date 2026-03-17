@@ -15,6 +15,8 @@
 
 ## Component Inventory
 
+### Dashboard
+
 | ID | Type | Shiny widget / renderer | Depends on | User story |
 | --- | --- | --- | --- | --- |
 | `input_metrics` | Input | `ui.input_checkbox_group()` | -- | #1, #3 |
@@ -41,7 +43,19 @@
 | `min_max_sales_viewed` | Output | `@render.text` | `df_filtered`, `input_metrics` | #1 |
 | `min_max_selected` | Output | `@render.text` | `input_metrics` | #1 |
 
+### LLM Chat
+| ID | Type | Shiny widget / renderer | Depends on | User story |
+| --- | --- | --- | --- | --- |
+| `qc_vals` | Reactive (server) | `qc.server()` | - | #1, #2, #3 |
+| `chat_title` | Output | `@render.text` | `qc_vals` | #1, #2, #3 |
+| `chat_table` | Output | `@render.data_frame` | `qc_vals` | #1, #2, #3 |
+| `chat_plot_bar` | Output | `@render_altair` | `qc_vals` | #1, #2, #3 |
+| `chat_plot_trend` | Output | `@render_altair` | `qc_vals` | #1, #2, #3 |
+| `download_chat_data` | Output | `@render.download` | `qc_vals` | #1, #2, #3 |
+
 ## Reactivity Diagram
+
+### Dashboard
 
 ```mermaid
 flowchart LR
@@ -90,6 +104,16 @@ flowchart LR
   A --> L([selected_metrics])
   E --> L
   A --> M([min_max_selected])
+```
+### LLM Chat
+
+```mermaid
+flowchart LR
+  A[/qc_vals/] --> B([chat_title])
+  A --> C([chat_table])
+  A --> D([chat_plot_bar])
+  A --> E([chat_plot_trend])
+  A --> F([download_chat_data])
 ```
 
 ## Calculation Details
