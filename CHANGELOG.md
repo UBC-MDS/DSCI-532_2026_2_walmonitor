@@ -14,7 +14,7 @@
 
 - `vegafusion` removed from `app.py` as it is no longer used.
 - "COGS" replaced with "Cost of Goods Sold" to enhance clarity.
-- Colour of the stacked area plot updated with more opacity improve to reduce contrast.
+- Colour of the stacked area plot updated with more opacity to reduce contrast.
 - LLM chatbot interface moved from the side bar to the top of the view to make it more prominent.
 - Data processed to `parquet` format for faster loading and better performance.
 - Data now filtered by `ibis` and DuckDB instead of `pandas` for better performance and scalability.
