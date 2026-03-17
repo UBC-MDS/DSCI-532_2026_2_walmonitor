@@ -456,28 +456,31 @@ app_ui = ui.page_fluid(
         ui.nav_panel(
             "LLM Chat",
             ui.layout_sidebar(
-                qc.sidebar(),
-                ui.card(
-                    ui.card_header(ui.output_text("chat_title")),
-                    ui.output_data_frame("chat_table"),
-                    fill=True,
-                ),
-                ui.layout_columns(
+                qc.sidebar(open="closed"),
+                ui.div(
+                    qc.ui(),
                     ui.card(
-                        ui.card_header("Sales by Product Line"),
-                        output_widget("chat_plot_bar"),
-                        full_screen=True,
+                        ui.card_header(ui.output_text("chat_title")),
+                        ui.output_data_frame("chat_table"),
+                        fill=True,
                     ),
-                    ui.card(
-                        ui.card_header("Sales Trend"),
-                        output_widget("chat_plot_trend"),
-                        full_screen=True,
+                    ui.layout_columns(
+                        ui.card(
+                            ui.card_header("Sales by Product Line"),
+                            output_widget("chat_plot_bar"),
+                            full_screen=True,
+                        ),
+                        ui.card(
+                            ui.card_header("Sales Trend"),
+                            output_widget("chat_plot_trend"),
+                            full_screen=True,
+                        ),
+                        col_widths=(5, 7),
+                        fill=False,
                     ),
-                    col_widths=(5, 7),
-                    fill=False,
-                ),
-                ui.download_button(
-                    "download_chat_data", "⬇️ Download Filtered Data as CSV"
+                    ui.download_button(
+                        "download_chat_data", "⬇️ Download Filtered Data as CSV"
+                    ),
                 ),
                 fillable=True,
             ),
