@@ -1,5 +1,15 @@
 # App specification
 
+## App layout
+
+### Dahboard
+
+This page shows key insights (average sales, sales evolution, product type comparisons...) about Walmart from 3 cities in Myanmar. These insights can be used, among other things, to compare performance between branches or determine factors that affect revenue.
+
+### LLM Chat
+
+This page contains an LLM Chatbot that can be used to ask questions about Walmart sales data and explore results as charts and tables. The Chatbot uses the `gpt-4.1-mini` model.
+
 ## Updated User Stories
 
 | #   | User Story                       | Status         | Notes                         |
