@@ -95,7 +95,7 @@
 
 - Functional dashboard app with three interactive charts (`src/app.py`)
 - Demo animation (`img/demo.gif`)
-- Component inventory(`reports/m2_spec.md`)
+- Component inventory (`reports/m2_spec.md`)
 - Reactivity diagram and description (`reports/m2_spec.md`)
 - `pip` dependencies for app deployment (`requirements.txt`)
 
