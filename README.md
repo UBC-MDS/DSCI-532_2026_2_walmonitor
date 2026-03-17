@@ -88,7 +88,17 @@ To run the unit tests, follow these instructions:
     ```bash
     pytest
     ```
+To run the Playwright UI tests (the app will start automatically):
 
+1. install the browser (one-time setup):
+```bash
+playwright install chromium
+```
+
+2. Then run:
+```bash
+pytest tests/playwright
+```
 ## LLM usage disclosure
 
 Large language models (LLMs) were used to assist the development of this project. We did our best to ensure that the use of LLMs was ethical and transparent. Below is a table summarizing the LLMs we used, their purposes, and the last time we accessed them.
