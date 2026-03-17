@@ -1,5 +1,36 @@
 # CHANGELOG
 
+## [0.4.0]
+
+
+
+### Collaboration
+
+- **Summary of workflow:** During the lab, each team member is assigned a set of tasks, which they break down into smaller chores. Any substantial feature implementation starts with an update to the design documentation. Completed chores are submitted as pull requests and reviewed by a teammate — if everything looks good, the PR is approved and merged into dev; otherwise, the reviewer leaves detailed comments outlining the required changes.
+
+- **CONTRIBUTING.md:** PR [#126](https://github.com/UBC-MDS/DSCI-532_2026_2_walmonitor/pull/126)
+- **M3 retrospective:** After the collaboration feedback from M3 we decided to split larger tasks into smaller chores (use parent and sub-issues to track tasks and chores) to try and make PRs cleaner. We also decided to start any substantial feature implementation with an update to the design documentation.
+- **M4:** In this milestone we ensured that every PR clearly describes its changes, that large PRs include a short comment noting what was reviewed, and that the design documentation m2_spec.md is kept up to date whenever substantial changes are made.
+
+### Reflection
+
+* With all the implemented feedback, the dashboard now provides a comprehensive view of key insights from the Walmart Sales Data. It is designed to let users quickly understand sales trends, branch performance, and product line breakdowns at a glance.
+* Current limitations : The dashboard is currently built around the specific format of the Walmart Sales dataset. Any change to the raw data format (e.g., renamed columns, different date formats) will break the existing logic and tests. Adapting the dashboard to a new dataset will require prior checks to ensure the data matches the expected format.
+* To verify the core logic of the dashboard, the following tests have been implemented:
+  * `test_filter_data` : Unit tests (`pytest`) to ensure that for every input (date range, aggregation method and range, comparison column, branch), the function filters the dataframe as expected. This ensures that the plots `plot_sales_mix` and `plot_product_lines` show the correct data.
+  * `test_ui` : Playwright UI tests (`pytest-playwright`) to verify that user interactions with the dashboard filters correctly update the UI:
+      * `test_branch_filter_updates_display`: Verifies that selecting a specific branch updates the value boxes, ensuring the dashboard responds to branch filter changes.
+      * `test_date_range_filter`: Verifies that changing the date range updates the dashboard, ensuring only data within the selected range is displayed.
+      * `test_aggregation_toggle`: Verifies that switching between Day and Week aggregation correctly updates the radio button state, ensuring the time grouping logic works correctly for both modes.
+
+
+
+* **Feedback prioritization:** Functional improvements were prioritized over cosmetic changes, as ensuring the dashboard worked correctly was essential to meeting the milestone requirements.
+
+* The M3 collaboration feedback (issue [#73](https://github.com/UBC-MDS/DSCI-532_2026_2_walmonitor/issues/73)) shaped our workflow the most this milestone. We found that the specific comments were very useful for pinpointing the problem areas we needed to address going forward. For example, feedback noted that some PRs were too large, which led us to start splitting tasks into smaller chores and adding detailed descriptions to every PR. This made reviews faster and more thorough by ensuring no changes were missed.
+
+
+
 ## [0.3.0]
 
 ### Added
