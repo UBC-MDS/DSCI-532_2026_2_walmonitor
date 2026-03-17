@@ -347,22 +347,22 @@ app_ui = ui.page_fluid(
                         ui.value_box(
                             f"Average Sales vs. {BASELINE_LABEL}",
                             ui.output_ui("sales_change"),
-                            height="130px",
+                            height="150px",
                         ),
                         ui.value_box(
                             "Gross Income Shown",
                             ui.output_ui("gross_income_viewed"),
-                            height="130px",
+                            height="150px",
                         ),
                         ui.value_box(
                             "Total Sales Shown",
                             ui.output_ui("total_sales_viewed"),
-                            height="130px",
+                            height="150px",
                         ),
                         ui.value_box(
                             ui.output_text("min_max_selected"),
                             ui.output_ui("min_max_sales_viewed"),
-                            height="130px",
+                            height="150px",
                         ),
                         fill=False,
                     ),
