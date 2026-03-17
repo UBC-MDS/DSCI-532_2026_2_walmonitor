@@ -12,7 +12,7 @@ from playwright.sync_api import Page, expect
 @pytest.fixture(scope="session", autouse=True)
 def start_app():
     proc = subprocess.Popen(["shiny", "run", "src/app.py", "--port", "8765"])
-    time.sleep(5)
+    time.sleep(10)
     yield
     proc.terminate()
 

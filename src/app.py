@@ -478,34 +478,41 @@ app_ui = ui.page_fluid(
         # ── Tab 2: LLM Chat ───────────────────────────────────────────────────────
         ui.nav_panel(
             "LLM Chat",
-            ui.layout_sidebar(
-                qc.sidebar(open="closed"),
+            ui.div(
+                # --- SCROLLABLE CHAT BOX ---
                 ui.div(
                     qc.ui(),
-                    ui.card(
-                        ui.card_header(ui.output_text("chat_title")),
-                        ui.output_data_frame("chat_table"),
-                        fill=True,
-                    ),
-                    ui.layout_columns(
-                        ui.card(
-                            ui.card_header("Sales by Product Line"),
-                            output_widget("chat_plot_bar"),
-                            full_screen=True,
-                        ),
-                        ui.card(
-                            ui.card_header("Sales Trend"),
-                            output_widget("chat_plot_trend"),
-                            full_screen=True,
-                        ),
-                        col_widths=(5, 7),
-                        fill=False,
-                    ),
-                    ui.download_button(
-                        "download_chat_data", "⬇️ Download Filtered Data as CSV"
-                    ),
+                    style="max-height: 400px; overflow-y: auto; padding: 15px; border: 1px solid #dee2e6; border-radius: 8px; background-color: #f8f9fa; margin-bottom: 20px;",
                 ),
-                fillable=True,
+                # --- RESULTS (Static/Non-scrollable) ---
+                ui.card(
+                    ui.card_header(ui.output_text("chat_title")),
+                    ui.output_data_frame("chat_table"),
+                    fill=True,
+                ),
+                ui.layout_columns(
+                    ui.card(
+                        ui.card_header("Sales by Product Line"),
+                        output_widget("chat_plot_bar"),
+                        full_screen=True,
+                    ),
+                    ui.card(
+                        ui.card_header("Sales Trend"),
+                        output_widget("chat_plot_trend"),
+                        full_screen=True,
+                    ),
+                    col_widths=(5, 7),
+                    fill=False,
+                ),
+                # --- FULL WIDTH DOWNLOAD BUTTON WITH BOTTOM PADDING ---
+                ui.div(
+                    ui.download_button(
+                        "download_chat_data",
+                        "⬇️ Download Filtered Data as CSV",
+                        class_="w-100",
+                    ),
+                    class_="pt-3 pb-5",  # Padding top and bottom
+                ),
             ),
         ),
     ),
