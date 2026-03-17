@@ -2,6 +2,41 @@
 
 ## [0.4.0]
 
+### Added
+
+- Unit tests for data filtering logic (`tests/unit/test_filter_data.py`).
+- UI tests for dashboard interactivity (`tests/playwright/test_ui.py`).
+- Reactive feature between the ranked bar plot and the stacked area plot. Click on a bar in the ranked bar plot to filter the stacked area plot with the corresponding category.
+- Instructions for running tests added to `README.md`.
+- Instructions for setting up API keys for the LLM chatbot feature added to `README.md`.
+
+### Changed
+
+- `vegafusion` removed from `app.py` as it is no longer used.
+- "COGS" replaced with "Cost of Goods Sold" to enhance clarity.
+- Colour of the stacked area plot updated with more opacity improve to reduce contrast.
+- LLM chatbot interface moved from the side bar to the top of the view to make it more prominent.
+- Data processed to `parquet` format for faster loading and better performance.
+- Data now filtered by `ibis` and DuckDB instead of `pandas` for better performance and scalability.
+- Data percentage KPI box replaced by "Gross Income Shown" to better reflect user stories.
+
+### Fixed
+
+- LLM chatbot now correctly responds to user queries without code error within the first interaction.
+- KPI box titles and values no longer overlap when browser is zoomed too large.
+
+### Known Issues
+
+- The y-axis of the line plot is hard to read when different metrics are selected due to the varying scales of the metrics. This makes it difficult to compare trends across different metrics.
+- The LLM chatbot interface is not occupying the full width of its UI card, which makes it look less visually appealing and may affect the user experience when interacting with the chatbot.
+
+### Release Highlights
+
+- Performance improvements by switching to `parquet` format and using `ibis` with DuckDB for data processing.
+- UI improvements to enhance readability and user experience.
+- Addition of unit tests and UI tests to ensure reliability.
+- Addition of interactive features to enhance user engagement.
+
 ### Collaboration
 
 - **Summary of workflow:** During the lab, each team member is assigned a set of tasks, which they break down into smaller chores. Any substantial feature implementation starts with an update to the design documentation. Completed chores are submitted as pull requests and reviewed by a teammate — if everything looks good, the PR is approved and merged into dev; otherwise, the reviewer leaves detailed comments outlining the required changes.
