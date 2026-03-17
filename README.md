@@ -55,15 +55,50 @@ You can run this app locally following the instructions below.
     pip install -r requirements.txt  # not required if using conda
     ```
 
-4. Run the app in reload mode:
+4. *(Optional)* If you want to test the LLM-assisted chatbot feature locally, you will need to set up your API keys. You do not need this step to run the dashboard without the chatbot feature.
+
+    * Follow this [instruction](https://scribehow.com/viewer/532_Generate_GitHub_Token_for_GitHub_Models__vRizc5xPQvqFxD7saSUOiw) created by Ilya Musabirov to generate your GitHub token.
+
+    * Create a `.env` file in the root of the project directory and add a single line as below. Replace `your_github_token` with the token you generated in the previous step.
+
+        ```markdown
+        GITHUB_TOKEN=your_github_token
+        ```
+
+    * Do not push your `.env` file to the remote repository. The `.gitignore` file in the repository already includes an entry to ignore the `.env` file.
+
+5. Run the app in reload mode:
 
     ```bash
     shiny run --reload src/app.py
     ```
 
-5. Check the terminal for the local URL (e.g., `http://127.0.0.1:8000`) and open it in your web browser to view the dashboard.
+6. Check the terminal for the local URL (e.g., `http://127.0.0.1:8000`) and open it in your web browser to view the dashboard.
 
 To contribute to this project, please refer to the [contribution guidelines](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md).
+
+## Tests
+
+Prior to running the tests, follow the first 3 steps in the [Contributors](#contributors) section above to set up the repository.
+
+1. Install the browser required for UI tests (one-time setup).
+
+    ```bash
+    playwright install chromium
+    ```
+
+2. To run the full test suite, run the following command from the root of the project. This will start both unit tests and UI tests.
+
+    ```bash
+    pytest
+    ```
+
+3. To start only the unit tests or UI tests, run one of the following commands.
+
+    ```bash
+    pytest tests/unit  # run unit tests only
+    pytest tests/playwright  # run UI tests only
+    ```
 
 ## LLM usage disclosure
 

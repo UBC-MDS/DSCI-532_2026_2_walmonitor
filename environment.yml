@@ -9,9 +9,12 @@ dependencies:
   - vegafusion=2.0.3 
   - nb_conda_kernels=2.5.1 
   - pip=26.0.1
+  - pytest=9.0.2
   - pip:
     - altair_ally==0.1.1
     - querychat==0.5.1 
     - chatlas==0.15.2 
     - python-dotenv==1.2.2
     - shiny==1.5.1
+    - ibis-framework[duckdb]==12.0.0
+    - pytest-playwright

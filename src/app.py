@@ -1,20 +1,27 @@
-import re
 import pandas as pd
 import altair as alt
 import warnings
+import os
+import sys
+import ibis
+from ibis import _
 from datetime import date
 from pathlib import Path
 
+sys.path.append(str(Path(__file__).parent))
+
 from shiny import App, ui, render, reactive, req
-from shinywidgets import render_altair, output_widget
+from shinywidgets import render_altair, output_widget, reactive_read
 
 import chatlas as ctl
 from dotenv import load_dotenv
 from querychat import QueryChat
 
+from utils import to_snake_case, filter_data
+
 load_dotenv()
 
-alt.data_transformers.enable("vegafusion")
+alt.data_transformers.disable_max_rows()
 warnings.filterwarnings("ignore", module="altair")
 
 
@@ -38,7 +45,7 @@ METRIC_CHOICES = {
     # "column name": "label",
     "Total": "Total Sales",
     "gross income": "Gross Income",
-    "cogs": "COGS",
+    "cogs": "Cost of Goods Sold",
     "gross margin percentage": "Margin %",
 }
 DEFAULT_METRICS = ["Total", "gross income"]
@@ -67,10 +74,14 @@ DEFAULT_END_MAX = date(2019, 3, 30)
 DATA_PATH = (
     Path(__file__).resolve().parents[1] / "data" / "raw" / "walmart_sales_data.csv"
 )
+
+PROCESSED_PATH = "data/processed/walmart_sales_data.parquet"
+
 DATA_RAW = pd.read_csv(DATA_PATH)
 DATA_RAW["Date"] = pd.to_datetime(DATA_RAW["Date"])
 BASE_COLS = ["Date", "Branch", "Product line"] + list(METRIC_CHOICES.keys())
 DATA_BASE = DATA_RAW[BASE_COLS].copy()  # Crop unused columns
+
 
 # Module level (outside server)
 BASELINE_MONTH = DATA_BASE[
@@ -81,15 +92,28 @@ BASELINE_MONTH = DATA_BASE[
 BASELINE_LABEL = BASELINE_MONTH["Date"].max().strftime("%b %Y")
 
 
-## Helper functions
-def to_snake_case(name: str) -> str:
-    """Convert a string to snake_case, suitable for column names."""
-    s = str(name).strip().lower()
-    s = s.replace("%", "pct")
-    s = re.sub(r"[^\w\s]", " ", s)
-    s = re.sub(r"\s+", "_", s)
-    s = re.sub(r"_+", "_", s).strip("_")
-    return s
+# One-time parquet of data
+def parq_data(input_path: str, output_path: str) -> None:
+
+    if not os.path.isdir(os.path.dirname(output_path)):
+        os.mkdir(os.path.dirname(output_path))
+
+        df = pd.read_csv(input_path)
+
+        df = df.rename(columns={c: to_snake_case(c) for c in df.columns})
+
+        df.to_parquet(output_path)
+
+
+def connect_db(processed_path: str):
+    con = ibis.duckdb.connect()
+    df_ref = con.read_parquet(processed_path)
+    return con, df_ref
+
+
+parq_data(input_path=DATA_PATH, output_path=PROCESSED_PATH)
+
+CON, DATA_REF = connect_db(processed_path=PROCESSED_PATH)
 
 
 def tooltip_title(name: str) -> str:
@@ -189,10 +213,17 @@ def make_ranked_product_lines_bars(
     )
 
     color_scale = make_comparison_color_scale(plot_df, comparison)
+    click_select = alt.selection_point(
+        name="bar_select",
+        fields=[comparison],
+        on="click",
+        clear="dblclick",
+        empty=True,
+    )
 
     return (
         alt.Chart(plot_df)
-        .mark_bar()
+        .mark_bar(cursor="pointer")
         .encode(
             x=alt.X(
                 "total:Q",
@@ -209,6 +240,15 @@ def make_ranked_product_lines_bars(
                 scale=color_scale,
                 legend=None,
             ),
+            opacity=alt.when(click_select)
+            .then(alt.value(1.0))
+            .otherwise(alt.value(0.45)),
+            stroke=alt.when(click_select)
+            .then(alt.value("black"))
+            .otherwise(alt.value(None)),
+            strokeWidth=alt.when(click_select)
+            .then(alt.value(1.5))
+            .otherwise(alt.value(0)),
             tooltip=[
                 alt.Tooltip(f"{comparison}:N", title=tooltip_title(comparison)),
                 alt.Tooltip(
@@ -218,13 +258,14 @@ def make_ranked_product_lines_bars(
                 ),
             ],
         )
-        .properties(height=450, width="container")
+        .add_params(click_select)
+        .properties(height=400, width="container")
     )
 
 
 ## Querychat
 qc = QueryChat(
-    DATA_RAW.copy(),
+    DATA_RAW.rename(columns={c: to_snake_case(c) for c in DATA_RAW.columns}),
     "walmart",
     client=ctl.ChatGithub(model="gpt-4.1-mini"),
     greeting="""👋 Ask me anything about the Walmart sales.
@@ -236,26 +277,25 @@ qc = QueryChat(
     """,
     data_description="""
         Walmart Sales Data (1000 Transactions).
-        - Invoice ID: Invoice of the sales made 
-        - Branch: Branch at which sales were made, 'A' (Yangon), 'B' (Mandalay), or 'C' (Naypyitaw)
-        - City: The location of the branch, 'Yangon', 'Mandalay', or 'Naypyitaw'
-        - Customer type: The type of the customer, 'Normal', or 'Member'
-        - Gender: Gender of the customer making purchase, 'Male', or 'Female'
-        - Product line: Product line of the product sold, 'Health and beauty', 'Electronic accessories', 'Home and lifestyle', 'Sports and travel', 'Food and beverages', or 'Fashion accessories'
-        - Unit price: The price of each product
-        - Quantity : The amount of the product sold
-        - Tax 5% : The amount of tax on the purchase
-        - Total : The total cost of the purchase
-        - Date : The date on which the purchase was made
-        - Time : The time at which the purchase was made
-        - Payment : The type of payment method used, 'Cash', 'Ewallet', or 'Credit card'
+        - invoice_id : Invoice of the sales made 
+        - branch : Branch at which sales were made, 'A' (Yangon), 'B' (Mandalay), or 'C' (Naypyitaw)
+        - city : The location of the branch, 'Yangon', 'Mandalay', or 'Naypyitaw'
+        - customer_type : The type of the customer, 'Normal', or 'Member'
+        - gender: Gender of the customer making purchase, 'Male', or 'Female'
+        - product_line : Product line of the product sold, 'Health and beauty', 'Electronic accessories', 'Home and lifestyle', 'Sports and travel', 'Food and beverages', or 'Fashion accessories'
+        - unit_price : The price of each product
+        - quantity : The amount of the product sold
+        - tax_5pct : The amount of tax on the purchase
+        - total : The total cost of the purchase
+        - date : The date on which the purchase was made
+        - time : The time at which the purchase was made
+        - payment : The type of payment method used, 'Cash', 'Ewallet', or 'Credit card'
         - cogs : Cost Of Goods sold
-        - gross margin percentage : Gross margin percentage
-        - gross income : Gross income
-        - Rating : Rating
+        - gross_margin_percentage : Gross margin percentage
+        - gross_income: Gross income
+        - rating : Rating
         """,
 )
-
 ## App interface
 app_ui = ui.page_fluid(
     ui.tags.style("""
@@ -276,7 +316,7 @@ app_ui = ui.page_fluid(
         }
     """),
     ui.div(
-        ui.h1("Walmonitor 0.3.0"),
+        ui.h1("Walmonitor 0.4.0"),
         style="margin-top: 24px; margin-bottom: 24px; margin-left: 24px;",
     ),
     ui.navset_tab(
@@ -347,22 +387,22 @@ app_ui = ui.page_fluid(
                         ui.value_box(
                             f"Average Sales vs. {BASELINE_LABEL}",
                             ui.output_ui("sales_change"),
-                            height="130px",
+                            height="150px",
                         ),
                         ui.value_box(
                             "Gross Income Shown",
                             ui.output_ui("gross_income_viewed"),
-                            height="130px",
+                            height="150px",
                         ),
                         ui.value_box(
                             "Total Sales Shown",
                             ui.output_ui("total_sales_viewed"),
-                            height="130px",
+                            height="150px",
                         ),
                         ui.value_box(
                             ui.output_text("min_max_selected"),
                             ui.output_ui("min_max_sales_viewed"),
-                            height="130px",
+                            height="150px",
                         ),
                         fill=False,
                     ),
@@ -419,6 +459,12 @@ app_ui = ui.page_fluid(
                         ui.card(
                             ui.card_header("Ranked Sales", style="font-size: 1.2rem;"),
                             ui.div(
+                                ui.help_text(
+                                    "Click a bar to filter the left chart. Double-click to clear the filter."
+                                ),
+                                style="margin-bottom: 8px;",
+                            ),
+                            ui.div(
                                 output_widget("plot_product_lines"),
                                 style="height: 200px;",
                             ),
@@ -432,8 +478,13 @@ app_ui = ui.page_fluid(
         # ── Tab 2: LLM Chat ───────────────────────────────────────────────────────
         ui.nav_panel(
             "LLM Chat",
-            ui.layout_sidebar(
-                qc.sidebar(),
+            ui.div(
+                # --- SCROLLABLE CHAT BOX ---
+                ui.div(
+                    qc.ui(),
+                    style="max-height: 400px; overflow-y: auto; padding: 15px; border: 1px solid #dee2e6; border-radius: 8px; background-color: #f8f9fa; margin-bottom: 20px;",
+                ),
+                # --- RESULTS (Static/Non-scrollable) ---
                 ui.card(
                     ui.card_header(ui.output_text("chat_title")),
                     ui.output_data_frame("chat_table"),
@@ -453,10 +504,15 @@ app_ui = ui.page_fluid(
                     col_widths=(5, 7),
                     fill=False,
                 ),
-                ui.download_button(
-                    "download_chat_data", "⬇️ Download Filtered Data as CSV"
+                # --- FULL WIDTH DOWNLOAD BUTTON WITH BOTTOM PADDING ---
+                ui.div(
+                    ui.download_button(
+                        "download_chat_data",
+                        "⬇️ Download Filtered Data as CSV",
+                        class_="w-100",
+                    ),
+                    class_="pt-3 pb-5",  # Padding top and bottom
                 ),
-                fillable=True,
             ),
         ),
     ),
@@ -466,6 +522,25 @@ app_ui = ui.page_fluid(
 ## Server
 def server(input, output, session):
 
+    def extract_selected_category(selection, comparison: str):
+        """Return the clicked bar category from an Altair point selection."""
+        if selection is None:
+            return None
+
+        raw_value = getattr(selection, "value", selection)
+        if raw_value is None:
+            return None
+
+        if isinstance(raw_value, dict):
+            raw_value = [raw_value]
+
+        if isinstance(raw_value, list) and len(raw_value) > 0:
+            first = raw_value[0]
+            if isinstance(first, dict):
+                return first.get(comparison)
+
+        return None
+
     # ── Tab 1: reactive calcs ─────────────────────────────────────────────────
     ## Reactive calcs
     @reactive.calc
@@ -474,39 +549,38 @@ def server(input, output, session):
         Apply filters and aggregations to the base data,
         returning the processed DataFrame.
         """
-        df = DATA_BASE.copy()
-
-        # Filter rows by date range
         start, end = input.input_date_range()
-        start_ts = pd.Timestamp(start)
-        end_ts = pd.Timestamp(end) + pd.Timedelta(days=1)
-        df = df[(df["Date"] >= start_ts) & (df["Date"] < end_ts)]
-
-        # Filter rows by branch
         branch = input.input_branch()
-        if branch != "all":
-            df = df[df["Branch"] == branch]
-
-        # Filter columns by metrics
         metrics = list(input.input_metrics() or [])
+
         if not metrics:
             return pd.DataFrame(columns=["date"])
 
-        df = df[["Date"] + metrics].copy()
+        t = DATA_REF
+        start_ts = pd.Timestamp(start)
+        end_ts = pd.Timestamp(end) + pd.Timedelta(days=1)
+        t = t.filter(
+            (t.date.cast("timestamp") >= start_ts) & (t.date.cast("timestamp") < end_ts)
+        )
 
-        # Aggregate by day/week and sum/mean
+        if branch != "all":
+            t = t.filter(t.branch == branch)
+
+        snake_metrics = [to_snake_case(m) for m in metrics]
+        t = t.select(["date"] + snake_metrics)
+
+        df = t.execute()
+        df["date"] = pd.to_datetime(df["date"])
+
         if input.input_agg() == "day":
-            df["date"] = df["Date"].dt.floor("D")
+            df["date"] = df["date"].dt.floor("D")
         else:
-            df["date"] = (
-                df["Date"].dt.to_period("W-SAT").dt.start_time
-            )  # Week starting Sunday
+            df["date"] = df["date"].dt.to_period("W-SAT").dt.start_time
 
-        out = df.groupby("date", as_index=False)[metrics].agg(input.input_agg_method())
-        out = out.sort_values("date").reset_index(drop=True)
-        out = out.rename(columns={c: to_snake_case(c) for c in out.columns})
-
-        return out
+        out = df.groupby("date", as_index=False)[snake_metrics].agg(
+            input.input_agg_method()
+        )
+        return out.sort_values("date").reset_index(drop=True)
 
     @reactive.calc
     def df_rel_baseline() -> pd.DataFrame:
@@ -544,37 +618,56 @@ def server(input, output, session):
 
     @reactive.calc
     def df_filtered_product() -> pd.DataFrame:
-        df = DATA_RAW
-
         start, end = input.input_date_range()
+        branch = input.input_branch()
+        COMP_COL = to_snake_case(input.input_comparison())
+        agg_time = input.input_agg()
+        agg_method = input.input_agg_method()
+
+        t = DATA_REF
         start_ts = pd.Timestamp(start)
         end_ts = pd.Timestamp(end) + pd.Timedelta(days=1)
-        mask = (df["Date"] >= start_ts) & (df["Date"] < end_ts)
+        t = t.filter(
+            (t.date.cast("timestamp") >= start_ts) & (t.date.cast("timestamp") < end_ts)
+        )
 
-        branch = input.input_branch()
         if branch != "all":
-            mask &= df["Branch"] == branch
+            t = t.filter(t.branch == branch)
 
-        COMP_COL = input.input_comparison()
-        SALES_COL = "Total"
+        t = t.select(["date", COMP_COL, "total"])
 
-        df = df.loc[mask, ["Date", COMP_COL, SALES_COL]].copy()
+        df = t.execute()
+        df["date"] = pd.to_datetime(df["date"])
 
-        if input.input_agg() == "day":
-            df["time"] = df["Date"].dt.floor("D")
+        if agg_time == "day":
+            df["time"] = df["date"].dt.floor("D")
         else:
-            df["time"] = df["Date"].dt.to_period("W-SAT").dt.start_time
+            df["time"] = df["date"].dt.to_period("W-SAT").dt.start_time
 
         out = (
-            df.groupby(["time", COMP_COL], as_index=False)[SALES_COL]
-            .agg(input.input_agg_method())
+            df.groupby(["time", COMP_COL], as_index=False)["total"]
+            .agg(agg_method)
             .sort_values(["time", COMP_COL])
             .reset_index(drop=True)
         )
-
-        out = out.rename(columns={c: to_snake_case(c) for c in out.columns})
-
         return out
+
+    @reactive.calc
+    def selected_category():
+        comparison = to_snake_case(input.input_comparison())
+        selection = reactive_read(plot_product_lines.widget.selections, "bar_select")
+        return extract_selected_category(selection, comparison)
+
+    @reactive.calc
+    def df_filtered_product_selected() -> pd.DataFrame:
+        data = df_filtered_product().copy()
+        comparison = to_snake_case(input.input_comparison())
+        selected = selected_category()
+
+        if selected is None or comparison not in data.columns:
+            return data
+
+        return data[data[comparison] == selected].reset_index(drop=True)
 
     @reactive.effect
     def _update_dates():
@@ -605,7 +698,7 @@ def server(input, output, session):
         This function uses user input to determine what to compare in the plot (Product line, Customer type, Payment type, Gender)
         and what date range to choose from if the values are aggregated by day.
         """
-        data = df_filtered_product()
+        data = df_filtered_product_selected()
 
         input_comparison = to_snake_case(input.input_comparison())
 
@@ -618,7 +711,7 @@ def server(input, output, session):
 
         chart = (
             alt.Chart(data)
-            .mark_area()
+            .mark_area(opacity=0.8)
             .encode(
                 y=alt.Y("total:Q", title="Total Sales"),
                 x=alt.X("time:T", title="Date", axis=alt.Axis(labelAngle=0)),
@@ -682,8 +775,8 @@ def server(input, output, session):
         if (
             df is None
             or df.empty
-            or "Product line" not in df.columns
-            or "Total" not in df.columns
+            or "product_line" not in df.columns
+            or "total" not in df.columns
         ):
             return (
                 alt.Chart(pd.DataFrame({"note": ["No data"]}))
@@ -691,17 +784,17 @@ def server(input, output, session):
                 .encode(text="note:N")
             )
         summary = (
-            df.groupby("Product line", as_index=False)["Total"]
+            df.groupby("product_line", as_index=False)["total"]
             .sum()
-            .sort_values("Total", ascending=False)
+            .sort_values("total", ascending=False)
         )
         return (
             alt.Chart(summary)
             .mark_bar()
             .encode(
-                x=alt.X("Total:Q", title="Total Sales"),
-                y=alt.Y("Product line:N", sort="-x", title=""),
-                tooltip=["Product line", "Total"],
+                x=alt.X("total:Q", title="Total Sales"),
+                y=alt.Y("product_line:N", sort="-x", title=""),
+                tooltip=["product_line", "total"],
             )
             .properties(height=280, width="container")
         )
@@ -712,8 +805,8 @@ def server(input, output, session):
         if (
             df is None
             or df.empty
-            or "Date" not in df.columns
-            or "Total" not in df.columns
+            or "date" not in df.columns
+            or "total" not in df.columns
         ):
             return (
                 alt.Chart(pd.DataFrame({"note": ["No data"]}))
@@ -721,15 +814,15 @@ def server(input, output, session):
                 .encode(text="note:N")
             )
         df = df.copy()
-        df["Date"] = pd.to_datetime(df["Date"])
-        daily = df.groupby("Date", as_index=False)["Total"].sum()
+        df["date"] = pd.to_datetime(df["date"])
+        daily = df.groupby("date", as_index=False)["total"].sum()
         return (
             alt.Chart(daily)
             .mark_line()
             .encode(
-                x=alt.X("Date:T", title="Date"),
-                y=alt.Y("Total:Q", title="Total Sales"),
-                tooltip=["Date:T", "Total:Q"],
+                x=alt.X("date:T", title="Date"),
+                y=alt.Y("total:Q", title="Total Sales"),
+                tooltip=["date:T", "total:Q"],
             )
             .properties(height=280, width="container")
         )
