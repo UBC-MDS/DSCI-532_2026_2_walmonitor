@@ -22,7 +22,7 @@
 
 ### Fixed
 
-- LLM chatbot now correctly responds to user queries without code error within the first interaction.
+- LLM chatbot now correctly responds to user queries without errors on the first interaction.
 - KPI box titles and values no longer overlap when browser is zoomed too large.
 
 ### Known Issues
