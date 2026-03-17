@@ -43,7 +43,7 @@
 
 - **CONTRIBUTING.md:** PR [#126](https://github.com/UBC-MDS/DSCI-532_2026_2_walmonitor/pull/126)
 - **M3 retrospective:** After the collaboration feedback from M3 we decided to split larger tasks into smaller chores (use parent and sub-issues to track tasks and chores) to try and make PRs cleaner. We also decided to start any substantial feature implementation with an update to the design documentation.
-- **M4:** In this milestone we ensured that every PR clearly describes its changes, that large PRs include a short comment noting what was reviewed, and that the design documentation `report/m2_spec.md` is kept up to date whenever substantial changes are made.
+- **M4:** In this milestone we ensured that every PR clearly describes its changes, that large PRs include a short comment noting what was reviewed, and that the design documentation `reports/m2_spec.md` is kept up to date whenever substantial changes are made.
 
 ### Reflection
 
