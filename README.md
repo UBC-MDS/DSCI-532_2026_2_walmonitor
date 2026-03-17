@@ -79,26 +79,27 @@ To contribute to this project, please refer to the [contribution guidelines](CON
 
 ## Tests
 
-To run the unit tests, follow these instructions:
+Prior to running the tests, follow the first 3 steps in the [Contributors](#contributors) section above to set up the repository.
 
-1. Follow the first 3 steps in the [Contributors](#contributors) section above to clone the repository.
+1. Install the browser required for UI tests (one-time setup).
 
-2. In the root of the directory, run the following command:
+    ```bash
+    playwright install chromium
+    ```
+
+2. To run the full test suite, run the following command from the root of the project. This will start both unit tests and UI tests.
 
     ```bash
     pytest
     ```
-To run the Playwright UI tests (the app will start automatically):
 
-1. install the browser (one-time setup):
-```bash
-playwright install chromium
-```
+3. To start only the unit tests or UI tests, run one of the following commands.
 
-2. Then run:
-```bash
-pytest tests/playwright
-```
+    ```bash
+    pytest tests/unit  # run unit tests only
+    pytest tests/playwright  # run UI tests only
+    ```
+
 ## LLM usage disclosure
 
 Large language models (LLMs) were used to assist the development of this project. We did our best to ensure that the use of LLMs was ethical and transparent. Below is a table summarizing the LLMs we used, their purposes, and the last time we accessed them.
