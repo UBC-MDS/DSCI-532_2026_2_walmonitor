@@ -139,4 +139,9 @@ The dashboard consists of multiple reactive calculations that take user input ch
 
 To verify the core logic of the dashboard, the following tests have been implemented:
 
-- `filter_data()`: Unit tests (`pytest`) to ensure that for every input (date range, aggregation method and range, comparison column, branch), the function filters the DataFrame as expected. This ensures that the plots `plot_sales_mix` and `plot_product_lines` show the correct data.
+- `filter_data()` : Unit tests (`pytest`) to ensure that for every input (date range, aggregation method and range, comparison column, branch), the function filters the dataframe as expected. This ensures that the plots `plot_sales_mix` and `plot_product_lines` show the correct data. 
+
+- Playwright UI tests (`pytest-playwright`) to verify that user interactions with the dashboard filters correctly update the UI:
+  - `test_branch_filter_updates_display`: Verifies that selecting a specific branch updates the value boxes, ensuring the dashboard responds to branch filter changes.
+  - `test_date_range_filter`: Verifies that changing the date range updates the dashboard, ensuring only data within the selected range is displayed.
+  - `test_aggregation_toggle`: Verifies that switching between Day and Week aggregation correctly updates the radio button state, ensuring the time grouping logic works correctly for both modes.
